@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111f"><link rel="manifest" href="/manifest.json">
+<title>Codelar OS</title>
+<style>
+:root{--bg:#060d17;--panel:#0b1625;--panel2:#0e1c2e;--line:#19314d;--text:#f2f7ff;--muted:#8fa7c0;--blue:#1687ff;--cyan:#1bd7ff;--green:#35d39b;--orange:#ffbd58;--red:#ff687c}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font:14px Inter,system-ui,-apple-system,Segoe UI,sans-serif}button,input,textarea,select{font:inherit}
+button{cursor:pointer}.hidden{display:none!important}
+.app{min-height:100dvh}.side{position:fixed;inset:0 auto 0 0;width:230px;background:#07111f;border-right:1px solid var(--line);padding:18px 13px;z-index:10}.side .brand{margin:2px 8px 25px;font-size:18px}.side nav button{width:100%;border:0;background:transparent;color:#91a7bf;text-align:left;padding:12px;border-radius:10px;margin:2px 0}.side nav button.active,.side nav button:hover{background:#0d2a4b;color:#fff}.side-bottom{position:absolute;bottom:16px;left:16px;right:16px;border-top:1px solid var(--line);padding-top:14px}.main{margin-left:230px;padding:25px;max-width:1500px}.top{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:20px}.top h1{font-size:26px;margin:0 0 4px}.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}.card{background:linear-gradient(180deg,#0c192a,#091422);border:1px solid var(--line);border-radius:16px;padding:17px}.metric .label{color:var(--muted)}.metric .value{font-size:25px;font-weight:800;margin:8px 0}.green{color:var(--green)}.orange{color:var(--orange)}.blue{color:#57bdff}.wide{grid-column:span 2}.title{font-weight:750;margin-bottom:14px}.empty{padding:45px 20px;text-align:center;color:var(--muted)}.empty strong{display:block;color:#dce8f5;margin-bottom:6px}.toolbar{display:flex;gap:9px;margin-bottom:13px}.toolbar input{flex:1}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:650px}.table th,.table td{padding:11px 7px;text-align:left;border-bottom:1px solid #152a42}.table th{font-size:12px;color:#7189a3}.pill{display:inline-block;padding:5px 9px;border-radius:99px;background:#153150;color:#a9d9ff;font-size:12px}.pill.ok{background:#0c3b30;color:#63e4b1}.pill.warn{background:#4b391c;color:#ffd078}.mobile-nav{display:none}
+.modal{position:fixed;inset:0;background:#0009;display:grid;place-items:center;padding:18px;z-index:30}.modal-card{width:min(480px,100%);background:#0b1829;border:1px solid var(--line);border-radius:18px;padding:20px}.modal-head{display:flex;justify-content:space-between;align-items:center}.x{background:none;border:0;color:#9fb2c8;font-size:22px}
+.btn{background:linear-gradient(180deg,var(--blue),#0d6fe0);color:#fff;border:0;border-radius:11px;padding:11px 16px;font-weight:650}.btn:hover{filter:brightness(1.08)}.btn.full{width:100%}
+.field{margin-bottom:13px}.field label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
+input,textarea,select{width:100%;background:#0c1a2c;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px 12px;outline:0}
+input:focus,textarea:focus,select:focus{border-color:var(--blue)}
+.login{min-height:100dvh;display:grid;place-items:center;padding:20px}
+.login-card{width:min(360px,100%);background:linear-gradient(180deg,#0c192a,#091422);border:1px solid var(--line);border-radius:18px;padding:26px}
+.login .brand{display:flex;align-items:center;gap:10px;margin-bottom:6px;font-size:18px}.login .brand img{width:26px;height:26px}
+.login .sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+.hint{color:var(--muted);font-size:12px;margin-top:10px;text-align:center}
+.hint.err{color:var(--red)}
+@media(max-width:900px){.side{width:72px}.side .brand span,.side nav span,.side-bottom span{display:none}.side .brand{justify-content:center}.main{margin-left:72px}.grid{grid-template-columns:1fr 1fr}.wide{grid-column:span 2}}
+@media(max-width:650px){
+ body{padding-bottom:74px}.side{display:none}.main{margin:0;padding:14px 13px 20px}.top{align-items:flex-start}.top h1{font-size:22px}.top .btn{padding:10px 12px}.grid{grid-template-columns:1fr 1fr;gap:9px}.card{padding:14px;border-radius:14px}.metric .value{font-size:19px}.metric .label{font-size:12px}.wide{grid-column:span 2}.mobile-nav{display:flex;position:fixed;z-index:20;left:8px;right:8px;bottom:8px;height:62px;background:#0b1929ee;backdrop-filter:blur(16px);border:1px solid var(--line);border-radius:17px;padding:5px;justify-content:space-around}.mobile-nav button{flex:1;border:0;background:transparent;color:#829ab4;border-radius:12px;font-size:11px}.mobile-nav button.active{background:#0d2d50;color:white}.mobile-nav b{display:block;font-size:18px;margin-bottom:1px}.table{min-width:620px}.toolbar{position:sticky;top:0}}
+</style>
+</head>
+<body>
+<div id="login" class="login"><div class="login-card">
+<div class="brand"><img src="/icon-192.png"><span>Codelar <b style="color:#1bbfff">OS</b></span></div>
+<div class="sub">Painel de gestão — dados reais da sua operação</div>
+<div class="field"><label>PIN</label><input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="••••••••" onkeydown="if(event.key==='Enter')doUnlock()"></div>
+<button class="btn full" onclick="doUnlock()">Desbloquear</button>
+<div class="hint" id="loginHint">Painel de uso pessoal — só você tem o PIN.</div>
+</div></div>
+
+<div id="app" class="app hidden">
+<aside class="side"><div class="brand"><img src="/icon-192.png"><span>Codelar <b style="color:#1bbfff">OS</b></span></div><nav id="nav">
+<button class="active" onclick="go('home',this)">⌂ <span>Dashboard</span></button>
+<button onclick="go('clients',this)">♙ <span>Clientes</span></button>
+<button onclick="go('projects',this)">▣ <span>Projetos</span></button>
+<button onclick="go('finance',this)">▤ <span>Financeiro</span></button>
+<button onclick="go('messages',this)">◌ <span>Mensagens</span></button>
+<button onclick="go('team',this)">♟ <span>Equipe</span></button>
+</nav></aside>
+<main class="main">
+<section id="home"><div class="top"><div><h1>Dashboard</h1><div class="muted">Somente informações cadastradas ou recebidas.</div></div><button class="btn" onclick="openClient()">+ Cliente</button></div>
+<div class="grid">
+<div class="card metric"><div class="label">Clientes</div><div class="value" id="mClients">0</div></div>
+<div class="card metric"><div class="label">Projetos</div><div class="value" id="mProjects">0</div></div>
+<div class="card metric"><div class="label">Recebido</div><div class="value green" id="mReceived">R$ 0,00</div></div>
+<div class="card metric"><div class="label">Pendente</div><div class="value orange" id="mPending">R$ 0,00</div></div>
+<div class="card wide"><div class="title">Mercado Pago</div><div id="mpStatus" class="muted">Verificando conexão...</div><br><button class="btn" onclick="syncMP()">Sincronizar pagamentos</button></div>
+<div class="card wide"><div class="title">Atividade</div><div class="empty"><strong id="activityTitle">Sem atividade ainda</strong>Quando você cadastrar clientes, projetos ou receber pagamentos, eles aparecerão aqui.</div></div>
+</div></section>
+
+<section id="clients" class="hidden"><div class="top"><div><h1>Clientes</h1><div class="muted">Cadastre somente clientes reais.</div></div><button class="btn" onclick="openClient()">+ Cliente</button></div><div class="card"><div class="toolbar"><input id="clientSearch" placeholder="Pesquisar..." oninput="renderClients()"></div><div class="table-wrap"><table class="table"><thead><tr><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Cadastrado</th></tr></thead><tbody id="clientsRows"></tbody></table></div><div id="clientsEmpty" class="empty hidden"><strong>Nenhum cliente cadastrado</strong>Use “+ Cliente” para registrar seu primeiro cliente.</div></div></section>
+
+<section id="projects" class="hidden"><div class="top"><div><h1>Projetos</h1><div class="muted">Cada projeto é um pedido real de cliente.</div></div><button class="btn" onclick="openProject()">+ Projeto</button></div><div class="card"><div class="table-wrap"><table class="table"><thead><tr><th>Projeto</th><th>Cliente</th><th>Status</th><th>Progresso</th><th>Valor</th></tr></thead><tbody id="projectsRows"></tbody></table></div><div id="projectsEmpty" class="empty hidden"><strong>Nenhum projeto cadastrado</strong>Seus pedidos aparecerão aqui depois que você registrar o primeiro.</div></div></section>
+
+<section id="finance" class="hidden"><div class="top"><div><h1>Financeiro</h1><div class="muted">Somente cobranças vinculadas ao Codelar são consideradas.</div></div><button class="btn" onclick="syncMP()">↻ Atualizar</button></div><div class="card"><div class="title">Pagamentos</div><div class="table-wrap"><table class="table"><thead><tr><th>ID Mercado Pago</th><th>Descrição</th><th>Valor</th><th>Status</th><th>Data</th></tr></thead><tbody id="paymentsRows"></tbody></table></div><div id="paymentsEmpty" class="empty hidden"><strong>Nenhum pagamento encontrado</strong>Somente pagamentos vinculados a pedidos/cobranças criados pelo Codelar aparecem aqui.</div></div></section>
+
+<section id="messages" class="hidden"><div class="top"><div><h1>Mensagens</h1><div class="muted">Área para registrar o atendimento dos clientes.</div></div></div><div class="card"><div class="empty"><strong>Mensageria pronta para integração</strong>Nesta versão, o banco já possui a tabela de mensagens. A próxima etapa pode conectar WhatsApp/e-mail ou outro canal sem inventar conversas.</div></div></section>
+
+<section id="team" class="hidden"><div class="top"><div><h1>Equipe</h1><div class="muted">Funcionários e permissões.</div></div></div><div class="card"><div class="empty"><strong>Somente o administrador foi criado</strong>Adicione funcionários pelo backend e defina permissões antes de colocar o sistema em produção.</div></div></section>
+</main>
+
+<nav class="mobile-nav" id="mobileNav">
+<button class="active" onclick="go('home',this)"><b>⌂</b>Início</button>
+<button onclick="go('clients',this)"><b>♙</b>Clientes</button>
+<button onclick="go('projects',this)"><b>▣</b>Projetos</button>
+<button onclick="go('finance',this)"><b>▤</b>Financeiro</button>
+<button onclick="go('messages',this)"><b>◌</b>Mensagens</button>
+</nav>
+</div>
+
+<div id="modal" class="modal hidden"><div class="modal-card"><div class="modal-head"><h3 id="modalTitle">Novo</h3><button class="x" onclick="closeModal()">×</button></div><div id="modalBody"></div></div></div>
+
+<script>
+let clients=[],projects=[],payments=[];
+const $=id=>document.getElementById(id);
+const money=c=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format((c||0)/100);
+async function api(path,opt={}){opt.headers={...(opt.headers||{}),"Content-Type":"application/json","x-codelar-token":localStorage.getItem("codelarToken")||""};const r=await fetch(path,opt);if(!r.ok)throw new Error((await r.json()).error||"Erro");return r.json()}
+async function doUnlock(){
+  const pin=$("pin").value;
+  try{
+    const r=await fetch("/api/unlock",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin})});
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.error||"PIN incorreto");
+    localStorage.setItem("codelarToken",d.token);
+    $("login").classList.add("hidden");
+    start();
+  }catch(e){
+    $("loginHint").textContent=e.message;
+    $("loginHint").classList.add("err");
+    $("pin").value="";
+  }
+}
+function logout(){localStorage.removeItem("codelarToken");$("app").classList.add("hidden");$("login").classList.remove("hidden")}
+function go(id,btn){document.querySelectorAll("main section").forEach(s=>s.classList.add("hidden"));$(id).classList.remove("hidden");document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));if(btn)btn.classList.add("active");if(id==="clients")renderClients();if(id==="projects")renderProjects();if(id==="finance")renderPayments()}
+async function start(){ $("app").classList.remove("hidden");await refresh();checkMP()}
+async function refresh(){try{const d=await api("/api/dashboard");$("mClients").textContent=d.clients;$("mProjects").textContent=d.projects;$("mReceived").textContent=money(d.received);$("mPending").textContent=money(d.pending);clients=await api("/api/clients");projects=await api("/api/projects");payments=await api("/api/payments");renderClients();renderProjects();renderPayments()}catch(e){if(e.message.includes("autenticado"))logout()}}
+async function checkMP(){try{const r=await api("/api/mercadopago/status");$("mpStatus").innerHTML=r.connected?'<span class="green">● Mercado Pago conectado no servidor</span>':'<span class="orange">● Mercado Pago não conectado</span>'}catch(e){}}
+async function syncMP(){try{const r=await api("/api/mercadopago/payments");$("mpStatus").innerHTML='<span class="green">● Sincronização concluída</span>';await refresh();alert(`${r.results.length} pagamentos retornados pelo Mercado Pago.`)}catch(e){alert(e.message)}}
+function renderClients(){let q=($("clientSearch")?.value||"").toLowerCase();let a=clients.filter(c=>(c.name+" "+(c.email||"")).toLowerCase().includes(q));$("clientsRows").innerHTML=a.map(c=>`<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.email||"—")}</td><td>${esc(c.phone||"—")}</td><td>${new Date(c.created_at).toLocaleDateString("pt-BR")}</td></tr>`).join("");$("clientsEmpty").classList.toggle("hidden",a.length>0)}
+function renderProjects(){let a=projects;$("projectsRows").innerHTML=a.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(p.client_name||"—")}</td><td><span class="pill">${esc(p.status)}</span></td><td>${p.progress}%</td><td>${money(p.price_cents)}</td></tr>`).join("");$("projectsEmpty").classList.toggle("hidden",a.length>0)}
+function renderPayments(){$("paymentsRows").innerHTML=payments.map(p=>`<tr><td>${esc(p.mp_payment_id||"—")}</td><td>${esc(p.description||"—")}</td><td>${money(p.amount_cents)}</td><td><span class="pill ${p.status==="approved"?"ok":p.status==="pending"?"warn":""}">${esc(p.status)}</span></td><td>${p.paid_at?new Date(p.paid_at).toLocaleString("pt-BR"):"—"}</td></tr>`).join("");$("paymentsEmpty").classList.toggle("hidden",payments.length>0)}
+function openClient(){ $("modalTitle").textContent="Novo cliente";$("modalBody").innerHTML=`<div class="field"><label>Nome</label><input id="mn"></div><div class="field"><label>E-mail</label><input id="me" type="email"></div><div class="field"><label>Telefone</label><input id="mp"></div><div class="field"><label>Observações</label><textarea id="mo"></textarea></div><button class="btn full" onclick="saveClient()">Salvar cliente</button>`;$("modal").classList.remove("hidden")}
+async function saveClient(){try{await api("/api/clients",{method:"POST",body:JSON.stringify({name:$("mn").value,email:$("me").value,phone:$("mp").value,notes:$("mo").value})});closeModal();await refresh();go("clients")}catch(e){alert(e.message)}}
+function openProject(){if(!clients.length){alert("Cadastre um cliente real primeiro.");return}$("modalTitle").textContent="Novo projeto";$("modalBody").innerHTML=`<div class="field"><label>Cliente</label><select id="pc">${clients.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></div><div class="field"><label>Nome do projeto/pedido</label><input id="pn"></div><div class="field"><label>Descrição</label><textarea id="pd"></textarea></div><div class="field"><label>Valor (R$)</label><input id="pv" type="number" step="0.01" min="0"></div><button class="btn full" onclick="saveProject()">Salvar projeto</button>`;$("modal").classList.remove("hidden")}
+async function saveProject(){try{await api("/api/projects",{method:"POST",body:JSON.stringify({client_id:Number($("pc").value),name:$("pn").value,description:$("pd").value,price_cents:Math.round(Number($("pv").value||0)*100)})});closeModal();await refresh();go("projects")}catch(e){alert(e.message)}}
+function closeModal(){$("modal").classList.add("hidden")}
+function esc(s){return String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
+if(localStorage.getItem("codelarToken")){
+  $("login").classList.add("hidden");
+  start();
+}
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
+}
+</script>
+</body></html>
