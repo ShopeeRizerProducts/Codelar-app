@@ -1,0 +1,15 @@
+{
+  "name": "Codelar OS",
+  "short_name": "Codelar OS",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#060d17",
+  "theme_color": "#07111f",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
