@@ -181,5 +181,5 @@ app.post("/api/webhooks/mercadopago",async(req,res)=>{
   }catch(e){res.sendStatus(200);}
 });
 
-app.get("*",(req,res)=>res.sendFile(process.cwd()+"/public/index.html"));
+app.get("/*splat",(req,res)=>res.sendFile(process.cwd()+"/public/index.html"));
 app.listen(port,()=>console.log(`Codelar OS em http://localhost:${port}`));
