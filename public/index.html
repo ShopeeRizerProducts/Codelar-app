@@ -2,32 +2,109 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#07111f"><link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#05070d"><link rel="manifest" href="/manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <title>Codelar OS</title>
 <style>
-:root{--bg:#060d17;--panel:#0b1625;--panel2:#0e1c2e;--line:#19314d;--text:#f2f7ff;--muted:#8fa7c0;--blue:#1687ff;--cyan:#1bd7ff;--green:#35d39b;--orange:#ffbd58;--red:#ff687c}
-*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font:14px Inter,system-ui,-apple-system,Segoe UI,sans-serif}button,input,textarea,select{font:inherit}
+:root{
+  --bg:#05070d;--bg2:#080c16;
+  --panel:#0b111d;--panel-brd:rgba(255,255,255,.07);--panel-brd-hover:rgba(255,255,255,.14);
+  --text:#f3f6fb;--muted:#8695ab;--faint:#4e5b70;
+  --blue:#3b82f6;--cyan:#22d3ee;--green:#34d399;--orange:#fbbf24;--red:#f87171;
+  --grad:linear-gradient(135deg,var(--blue),var(--cyan));
+  --r-lg:20px;--r-md:14px;--r-sm:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 "Plus Jakarta Sans",Inter,system-ui,-apple-system,Segoe UI,sans-serif;-webkit-font-smoothing:antialiased}
+body{background-image:radial-gradient(circle at 12% -10%,rgba(59,130,246,.16),transparent 42%),radial-gradient(circle at 100% 0%,rgba(34,211,238,.08),transparent 38%);background-attachment:fixed}
+button,input,textarea,select{font:inherit;color:inherit}
 button{cursor:pointer}.hidden{display:none!important}
-.app{min-height:100dvh}.side{position:fixed;inset:0 auto 0 0;width:230px;background:#07111f;border-right:1px solid var(--line);padding:18px 13px;z-index:10}.side .brand{margin:2px 8px 25px;font-size:18px}.side nav button{width:100%;border:0;background:transparent;color:#91a7bf;text-align:left;padding:12px;border-radius:10px;margin:2px 0}.side nav button.active,.side nav button:hover{background:#0d2a4b;color:#fff}.side-bottom{position:absolute;bottom:16px;left:16px;right:16px;border-top:1px solid var(--line);padding-top:14px}.main{margin-left:230px;padding:25px;max-width:1500px}.top{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:20px}.top h1{font-size:26px;margin:0 0 4px}.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}.card{background:linear-gradient(180deg,#0c192a,#091422);border:1px solid var(--line);border-radius:16px;padding:17px}.metric .label{color:var(--muted)}.metric .value{font-size:25px;font-weight:800;margin:8px 0}.green{color:var(--green)}.orange{color:var(--orange)}.blue{color:#57bdff}.wide{grid-column:span 2}.title{font-weight:750;margin-bottom:14px}.empty{padding:45px 20px;text-align:center;color:var(--muted)}.empty strong{display:block;color:#dce8f5;margin-bottom:6px}.toolbar{display:flex;gap:9px;margin-bottom:13px}.toolbar input{flex:1}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:650px}.table th,.table td{padding:11px 7px;text-align:left;border-bottom:1px solid #152a42}.table th{font-size:12px;color:#7189a3}.pill{display:inline-block;padding:5px 9px;border-radius:99px;background:#153150;color:#a9d9ff;font-size:12px}.pill.ok{background:#0c3b30;color:#63e4b1}.pill.warn{background:#4b391c;color:#ffd078}.mobile-nav{display:none}
-.modal{position:fixed;inset:0;background:#0009;display:grid;place-items:center;padding:18px;z-index:30}.modal-card{width:min(480px,100%);background:#0b1829;border:1px solid var(--line);border-radius:18px;padding:20px}.modal-head{display:flex;justify-content:space-between;align-items:center}.x{background:none;border:0;color:#9fb2c8;font-size:22px}
-.btn{background:linear-gradient(180deg,var(--blue),#0d6fe0);color:#fff;border:0;border-radius:11px;padding:11px 16px;font-weight:650}.btn:hover{filter:brightness(1.08)}.btn.full{width:100%}
-.field{margin-bottom:13px}.field label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
-input,textarea,select{width:100%;background:#0c1a2c;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px 12px;outline:0}
+h1,h2,h3{font-family:"Plus Jakarta Sans",sans-serif;letter-spacing:-.02em}
+::selection{background:rgba(59,130,246,.35)}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#1c2536;border-radius:99px}::-webkit-scrollbar-track{background:transparent}
+
+.app{min-height:100dvh}
+.side{position:fixed;inset:0 auto 0 0;width:246px;background:linear-gradient(180deg,#080b13,#060810);border-right:1px solid var(--panel-brd);padding:22px 15px;z-index:10;display:flex;flex-direction:column}
+.side .brand{display:flex;align-items:center;gap:10px;margin:2px 8px 28px;font-size:17px;font-weight:700}
+.side .brand img{width:30px;height:30px;border-radius:9px}
+.side nav{display:flex;flex-direction:column;gap:3px}
+.side nav button{display:flex;align-items:center;gap:11px;width:100%;border:0;border-left:2px solid transparent;background:transparent;color:var(--muted);text-align:left;padding:11px 12px;border-radius:10px;margin:0;font-size:13.5px;font-weight:500;transition:background .15s,color .15s}
+.side nav button svg{width:18px;height:18px;flex:none;opacity:.85}
+.side nav button.active{background:rgba(59,130,246,.12);color:#fff;border-left-color:var(--blue)}
+.side nav button:hover{background:rgba(255,255,255,.05);color:#fff}
+.side-bottom{margin-top:auto;padding-top:16px;border-top:1px solid var(--panel-brd)}
+.side-bottom button{display:flex;align-items:center;gap:9px;width:100%;border:0;background:transparent;color:var(--muted);text-align:left;padding:10px 12px;border-radius:10px;font-size:13px}
+.side-bottom button:hover{background:rgba(255,255,255,.05);color:#fff}
+
+.main{margin-left:246px;padding:30px 34px 50px;max-width:1440px}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px}
+.top h1{font-size:25px;font-weight:800;margin:0 0 4px}
+.muted{color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012));border:1px solid var(--panel-brd);border-radius:var(--r-lg);padding:19px 20px;transition:border-color .15s}
+.card:hover{border-color:var(--panel-brd-hover)}
+.metric{position:relative;overflow:hidden}
+.metric .ico{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;margin-bottom:14px}
+.metric .ico svg{width:17px;height:17px}
+.metric .ico.b{background:rgba(59,130,246,.15);color:#7cb0ff}
+.metric .ico.p{background:rgba(167,139,250,.15);color:#c4b5fd}
+.metric .ico.g{background:rgba(52,211,153,.15);color:#6ee7b7}
+.metric .ico.o{background:rgba(251,191,36,.15);color:#fcd34d}
+.metric .label{color:var(--muted);font-size:12.5px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.metric .value{font-size:24px;font-weight:800;margin:6px 0 0;letter-spacing:-.02em}
+.green{color:var(--green)}.orange{color:var(--orange)}.blue{color:#7cb0ff}
+.wide{grid-column:span 2}.full{grid-column:1/-1}
+.title{font-weight:750;font-size:15px;margin-bottom:2px}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.empty{padding:48px 20px;text-align:center;color:var(--muted)}
+.empty strong{display:block;color:#dce8f5;margin-bottom:6px;font-size:14.5px}
+.toolbar{display:flex;gap:9px;margin-bottom:14px}.toolbar input{flex:1}
+.table-wrap{overflow:auto}
+.table{width:100%;border-collapse:collapse;min-width:650px}
+.table th,.table td{padding:12px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,.05)}
+.table th{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.table tbody tr:hover{background:rgba(255,255,255,.02)}
+.pill{display:inline-block;padding:5px 11px;border-radius:99px;background:rgba(124,176,255,.13);color:#a9d9ff;font-size:12px;font-weight:600}
+.pill.ok{background:rgba(52,211,153,.14);color:#6ee7b7}.pill.warn{background:rgba(251,191,36,.14);color:#fcd34d}
+.mobile-nav{display:none}
+
+.range-group{display:flex;gap:4px;background:rgba(255,255,255,.03);border:1px solid var(--panel-brd);padding:4px;border-radius:11px}
+.range-btn{border:0;background:transparent;color:var(--muted);padding:7px 12px;border-radius:8px;font-size:12.5px;font-weight:600}
+.range-btn.active{background:var(--grad);color:#04101f}
+.chart-total{font-size:13px;color:var(--muted)}.chart-total b{color:#fff;font-size:15px}
+
+.modal{position:fixed;inset:0;background:rgba(3,5,10,.6);backdrop-filter:blur(3px);display:grid;place-items:center;padding:18px;z-index:30}
+.modal-card{width:min(480px,100%);background:linear-gradient(180deg,#0d1420,#090e17);border:1px solid var(--panel-brd);border-radius:var(--r-lg);padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.modal-head h3{font-size:17px;margin:0}
+.x{background:none;border:0;color:var(--muted);font-size:22px;line-height:1;padding:4px}
+.btn{background:var(--grad);color:#04101f;border:0;border-radius:11px;padding:11px 17px;font-weight:700;font-size:13.5px;display:inline-flex;align-items:center;gap:7px;transition:filter .15s,transform .1s}
+.btn:hover{filter:brightness(1.08)}.btn:active{transform:scale(.98)}.btn.full{width:100%;justify-content:center}
+.field{margin-bottom:14px}.field label{display:block;color:var(--muted);font-size:12px;font-weight:600;margin-bottom:6px}
+input,textarea,select{width:100%;background:#0d1626;border:1px solid var(--panel-brd);color:var(--text);border-radius:10px;padding:11px 13px;outline:0;transition:border-color .15s}
 input:focus,textarea:focus,select:focus{border-color:var(--blue)}
 .login{min-height:100dvh;display:grid;place-items:center;padding:20px}
-.login-card{width:min(360px,100%);background:linear-gradient(180deg,#0c192a,#091422);border:1px solid var(--line);border-radius:18px;padding:26px}
-.login .brand{display:flex;align-items:center;gap:10px;margin-bottom:6px;font-size:18px}.login .brand img{width:26px;height:26px}
-.login .sub{color:var(--muted);font-size:13px;margin-bottom:20px}
-.hint{color:var(--muted);font-size:12px;margin-top:10px;text-align:center}
+.login-card{width:min(370px,100%);background:linear-gradient(180deg,#0d1420,#080c15);border:1px solid var(--panel-brd);border-radius:22px;padding:30px 28px;box-shadow:0 25px 70px rgba(0,0,0,.45)}
+.login .brand{display:flex;align-items:center;gap:11px;margin-bottom:8px;font-size:18px;font-weight:700}.login .brand img{width:32px;height:32px;border-radius:9px}
+.login .sub{color:var(--muted);font-size:13px;margin-bottom:22px}
+.hint{color:var(--muted);font-size:12px;margin-top:12px;text-align:center}
 .hint.err{color:var(--red)}
-@media(max-width:900px){.side{width:72px}.side .brand span,.side nav span,.side-bottom span{display:none}.side .brand{justify-content:center}.main{margin-left:72px}.grid{grid-template-columns:1fr 1fr}.wide{grid-column:span 2}}
+@media(max-width:900px){.side{width:76px}.side .brand span,.side nav span,.side-bottom span{display:none}.side .brand{justify-content:center}.main{margin-left:76px}.grid{grid-template-columns:1fr 1fr}.wide{grid-column:span 2}}
 @media(max-width:650px){
- body{padding-bottom:74px}.side{display:none}.main{margin:0;padding:14px 13px 20px}.top{align-items:flex-start}.top h1{font-size:22px}.top .btn{padding:10px 12px}.grid{grid-template-columns:1fr 1fr;gap:9px}.card{padding:14px;border-radius:14px}.metric .value{font-size:19px}.metric .label{font-size:12px}.wide{grid-column:span 2}.mobile-nav{display:flex;position:fixed;z-index:20;left:8px;right:8px;bottom:8px;height:62px;background:#0b1929ee;backdrop-filter:blur(16px);border:1px solid var(--line);border-radius:17px;padding:5px;justify-content:space-around}.mobile-nav button{flex:1;border:0;background:transparent;color:#829ab4;border-radius:12px;font-size:11px}.mobile-nav button.active{background:#0d2d50;color:white}.mobile-nav b{display:block;font-size:18px;margin-bottom:1px}.table{min-width:620px}.toolbar{position:sticky;top:0}}
+ body{padding-bottom:78px}.side{display:none}.main{margin:0;padding:16px 14px 24px}.top{align-items:flex-start}.top h1{font-size:21px}.top .btn{padding:10px 13px}.grid{grid-template-columns:1fr 1fr;gap:10px}.card{padding:15px;border-radius:16px}.metric .value{font-size:19px}.metric .label{font-size:11px}.wide{grid-column:span 2}
+ .mobile-nav{display:flex;position:fixed;z-index:20;left:8px;right:8px;bottom:8px;height:64px;background:rgba(10,14,24,.85);backdrop-filter:blur(18px);border:1px solid var(--panel-brd);border-radius:18px;padding:6px;justify-content:space-around}
+ .mobile-nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:0;background:transparent;color:#7d8ca3;border-radius:13px;font-size:10.5px;font-weight:600}
+ .mobile-nav button svg{width:18px;height:18px}
+ .mobile-nav button.active{background:rgba(59,130,246,.15);color:#fff}
+ .table{min-width:620px}.toolbar{position:sticky;top:0}
+ .range-group{overflow-x:auto}.range-btn{white-space:nowrap}
+}
 </style>
 </head>
 <body>
 <div id="login" class="login"><div class="login-card">
-<div class="brand"><img src="/icon-192.png"><span>Codelar <b style="color:#1bbfff">OS</b></span></div>
+<div class="brand"><img src="/icon-192.png"><span>Codelar <b style="color:#22d3ee">OS</b></span></div>
 <div class="sub">Painel de gestão — dados reais da sua operação</div>
 <div class="field"><label>PIN</label><input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="••••••••" onkeydown="if(event.key==='Enter')doUnlock()"></div>
 <button class="btn full" onclick="doUnlock()">Desbloquear</button>
@@ -35,49 +112,152 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue)}
 </div></div>
 
 <div id="app" class="app hidden">
-<aside class="side"><div class="brand"><img src="/icon-192.png"><span>Codelar <b style="color:#1bbfff">OS</b></span></div><nav id="nav">
-<button class="active" onclick="go('home',this)">⌂ <span>Dashboard</span></button>
-<button onclick="go('clients',this)">♙ <span>Clientes</span></button>
-<button onclick="go('projects',this)">▣ <span>Projetos</span></button>
-<button onclick="go('finance',this)">▤ <span>Financeiro</span></button>
-<button onclick="go('messages',this)">◌ <span>Mensagens</span></button>
-<button onclick="go('team',this)">♟ <span>Equipe</span></button>
-</nav></aside>
+<aside class="side"><div class="brand"><img src="/icon-192.png"><span>Codelar <b style="color:#22d3ee">OS</b></span></div><nav id="nav"></nav>
+<div class="side-bottom"><button onclick="logout()" id="sideLogout"></button></div>
+</aside>
 <main class="main">
-<section id="home"><div class="top"><div><h1>Dashboard</h1><div class="muted">Somente informações cadastradas ou recebidas.</div></div><button class="btn" onclick="openClient()">+ Cliente</button></div>
+<section id="home"><div class="top"><div><h1>Dashboard</h1><div class="muted">Somente informações cadastradas ou recebidas.</div></div><button class="btn" onclick="openClient()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>Cliente</button></div>
 <div class="grid">
-<div class="card metric"><div class="label">Clientes</div><div class="value" id="mClients">0</div></div>
-<div class="card metric"><div class="label">Projetos</div><div class="value" id="mProjects">0</div></div>
-<div class="card metric"><div class="label">Recebido</div><div class="value green" id="mReceived">R$ 0,00</div></div>
-<div class="card metric"><div class="label">Pendente</div><div class="value orange" id="mPending">R$ 0,00</div></div>
-<div class="card wide"><div class="title">Mercado Pago</div><div id="mpStatus" class="muted">Verificando conexão...</div><br><button class="btn" onclick="syncMP()">Sincronizar pagamentos</button></div>
-<div class="card wide"><div class="title">Atividade</div><div class="empty"><strong id="activityTitle">Sem atividade ainda</strong>Quando você cadastrar clientes, projetos ou receber pagamentos, eles aparecerão aqui.</div></div>
+<div class="card metric"><div class="ico b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.8 20c0-3.6 2.8-6.2 6.2-6.2s6.2 2.6 6.2 6.2"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15 14.6c2.6.5 4.4 2.4 4.4 5.4"/></svg></div><div class="label">Clientes</div><div class="value" id="mClients">0</div></div>
+<div class="card metric"><div class="ico p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="11.5" rx="2.2"/><path d="M8.5 8V6.3A2 2 0 0 1 10.5 4.3h3a2 2 0 0 1 2 2V8"/><path d="M3 13.2h18"/></svg></div><div class="label">Projetos</div><div class="value" id="mProjects">0</div></div>
+<div class="card metric"><div class="ico g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.3 12.3 2.6 2.6 5-5.2"/></svg></div><div class="label">Recebido</div><div class="value green" id="mReceived">R$ 0,00</div></div>
+<div class="card metric"><div class="ico o"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg></div><div class="label">Pendente</div><div class="value orange" id="mPending">R$ 0,00</div></div>
+<div class="card full">
+  <div class="card-head">
+    <div><div class="title">Faturamento</div><div class="chart-total">Total no período: <b id="chartTotal">R$ 0,00</b></div></div>
+    <div class="range-group" id="rangeGroup"></div>
+  </div>
+  <canvas id="revenueChart" height="90"></canvas>
+</div>
 </div></section>
 
-<section id="clients" class="hidden"><div class="top"><div><h1>Clientes</h1><div class="muted">Cadastre somente clientes reais.</div></div><button class="btn" onclick="openClient()">+ Cliente</button></div><div class="card"><div class="toolbar"><input id="clientSearch" placeholder="Pesquisar..." oninput="renderClients()"></div><div class="table-wrap"><table class="table"><thead><tr><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Cadastrado</th></tr></thead><tbody id="clientsRows"></tbody></table></div><div id="clientsEmpty" class="empty hidden"><strong>Nenhum cliente cadastrado</strong>Use “+ Cliente” para registrar seu primeiro cliente.</div></div></section>
+<section id="clients" class="hidden"><div class="top"><div><h1>Clientes</h1><div class="muted">Cadastre somente clientes reais.</div></div><button class="btn" onclick="openClient()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>Cliente</button></div><div class="card"><div class="toolbar"><input id="clientSearch" placeholder="Pesquisar..." oninput="renderClients()"></div><div class="table-wrap"><table class="table"><thead><tr><th>Nome</th><th>E-mail</th><th>Tipo de site</th><th>Valor pago</th><th>Data</th><th></th></tr></thead><tbody id="clientsRows"></tbody></table></div><div id="clientsEmpty" class="empty hidden"><strong>Nenhum cliente cadastrado</strong>Use “+ Cliente” para registrar seu primeiro cliente.</div></div></section>
 
-<section id="projects" class="hidden"><div class="top"><div><h1>Projetos</h1><div class="muted">Cada projeto é um pedido real de cliente.</div></div><button class="btn" onclick="openProject()">+ Projeto</button></div><div class="card"><div class="table-wrap"><table class="table"><thead><tr><th>Projeto</th><th>Cliente</th><th>Status</th><th>Progresso</th><th>Valor</th></tr></thead><tbody id="projectsRows"></tbody></table></div><div id="projectsEmpty" class="empty hidden"><strong>Nenhum projeto cadastrado</strong>Seus pedidos aparecerão aqui depois que você registrar o primeiro.</div></div></section>
+<section id="history" class="hidden"><div class="top"><div><h1>Histórico</h1><div class="muted">Pedidos finalizados.</div></div></div><div class="card"><div class="table-wrap"><table class="table"><thead><tr><th>Nome</th><th>E-mail</th><th>Tipo de site</th><th>Especificações</th><th>Valor pago</th><th>Finalizado em</th><th></th></tr></thead><tbody id="historyRows"></tbody></table></div><div id="historyEmpty" class="empty hidden"><strong>Nenhum pedido finalizado ainda</strong>Quando você clicar em “Pedido finalizado” em um cliente, ele aparece aqui.</div></div></section>
 
-<section id="finance" class="hidden"><div class="top"><div><h1>Financeiro</h1><div class="muted">Somente cobranças vinculadas ao Codelar são consideradas.</div></div><button class="btn" onclick="syncMP()">↻ Atualizar</button></div><div class="card"><div class="title">Pagamentos</div><div class="table-wrap"><table class="table"><thead><tr><th>ID Mercado Pago</th><th>Descrição</th><th>Valor</th><th>Status</th><th>Data</th></tr></thead><tbody id="paymentsRows"></tbody></table></div><div id="paymentsEmpty" class="empty hidden"><strong>Nenhum pagamento encontrado</strong>Somente pagamentos vinculados a pedidos/cobranças criados pelo Codelar aparecem aqui.</div></div></section>
+<section id="projects" class="hidden"><div class="top"><div><h1>Projetos</h1><div class="muted">Cada projeto é um pedido real de cliente.</div></div><button class="btn" onclick="openProject()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>Projeto</button></div><div class="card"><div class="table-wrap"><table class="table"><thead><tr><th>Projeto</th><th>Cliente</th><th>Status</th><th>Progresso</th><th>Valor</th></tr></thead><tbody id="projectsRows"></tbody></table></div><div id="projectsEmpty" class="empty hidden"><strong>Nenhum projeto cadastrado</strong>Seus pedidos aparecerão aqui depois que você registrar o primeiro.</div></div></section>
 
-<section id="messages" class="hidden"><div class="top"><div><h1>Mensagens</h1><div class="muted">Área para registrar o atendimento dos clientes.</div></div></div><div class="card"><div class="empty"><strong>Mensageria pronta para integração</strong>Nesta versão, o banco já possui a tabela de mensagens. A próxima etapa pode conectar WhatsApp/e-mail ou outro canal sem inventar conversas.</div></div></section>
+<section id="finance" class="hidden"><div class="top"><div><h1>Financeiro</h1><div class="muted">Pagamentos registrados manualmente.</div></div><button class="btn" onclick="openPayment()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>Pagamento</button></div><div class="card"><div class="title">Pagamentos</div><div class="table-wrap"><table class="table"><thead><tr><th>Cliente</th><th>Projeto</th><th>Descrição</th><th>Valor</th><th>Status</th><th>Data</th></tr></thead><tbody id="paymentsRows"></tbody></table></div><div id="paymentsEmpty" class="empty hidden"><strong>Nenhum pagamento registrado</strong>Use “+ Pagamento” para registrar o primeiro.</div></div></section>
+
+<section id="messages" class="hidden"><div class="top"><div><h1>Mensagens</h1><div class="muted">Histórico de conversas com clientes.</div></div></div><div class="card"><div class="table-wrap" id="messagesList"></div><div id="messagesEmpty" class="empty hidden"><strong>Nenhuma mensagem ainda</strong>Registre conversas com clientes aqui conforme for atendendo.</div></div></section>
 
 <section id="team" class="hidden"><div class="top"><div><h1>Equipe</h1><div class="muted">Funcionários e permissões.</div></div></div><div class="card"><div class="empty"><strong>Somente o administrador foi criado</strong>Adicione funcionários pelo backend e defina permissões antes de colocar o sistema em produção.</div></div></section>
 </main>
 
-<nav class="mobile-nav" id="mobileNav">
-<button class="active" onclick="go('home',this)"><b>⌂</b>Início</button>
-<button onclick="go('clients',this)"><b>♙</b>Clientes</button>
-<button onclick="go('projects',this)"><b>▣</b>Projetos</button>
-<button onclick="go('finance',this)"><b>▤</b>Financeiro</button>
-<button onclick="go('messages',this)"><b>◌</b>Mensagens</button>
-</nav>
+<nav class="mobile-nav" id="mobileNav"></nav>
 </div>
 
 <div id="modal" class="modal hidden"><div class="modal-card"><div class="modal-head"><h3 id="modalTitle">Novo</h3><button class="x" onclick="closeModal()">×</button></div><div id="modalBody"></div></div></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <script>
-let clients=[],projects=[],payments=[];
+const ICON = {
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h4v-6h2v6h4a1 1 0 0 0 1-1v-9"/></svg>',
+  users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.8 20c0-3.6 2.8-6.2 6.2-6.2s6.2 2.6 6.2 6.2"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15 14.6c2.6.5 4.4 2.4 4.4 5.4"/></svg>',
+  briefcase:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="11.5" rx="2.2"/><path d="M8.5 8V6.3A2 2 0 0 1 10.5 4.3h3a2 2 0 0 1 2 2V8"/><path d="M3 13.2h18"/></svg>',
+  wallet:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.2"/><path d="M3 10.2h18"/><circle cx="16.6" cy="14.3" r="1.1" fill="currentColor" stroke="none"/></svg>',
+  message:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.2h16v11.3H8.3L4 20.5V5.2Z"/></svg>',
+  team:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2.9"/><circle cx="16" cy="8" r="2.9"/><path d="M2.3 20c0-3.2 2.6-5.4 5.7-5.4s5.7 2.2 5.7 5.4"/><path d="M14.3 15c2.7.4 4.7 2.6 4.7 5"/></svg>',
+  logout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8"/><path d="M10 12h11m0 0-3.2-3.2M21 12l-3.2 3.2"/></svg>',
+};
+const NAV_ITEMS = [
+  {id:'home',icon:'home',label:'Dashboard'},
+  {id:'clients',icon:'users',label:'Clientes'},
+  {id:'projects',icon:'briefcase',label:'Projetos'},
+  {id:'finance',icon:'wallet',label:'Financeiro'},
+  {id:'history',icon:'check',label:'Histórico'},
+  {id:'messages',icon:'message',label:'Mensagens'},
+  {id:'team',icon:'team',label:'Equipe'},
+];
+function buildNav(){
+  document.getElementById('nav').innerHTML = NAV_ITEMS.map((it,i)=>
+    `<button data-nav="${it.id}" class="${i===0?'active':''}" onclick="go('${it.id}')">${ICON[it.icon]}<span>${it.label}</span></button>`
+  ).join("");
+  document.getElementById('mobileNav').innerHTML = NAV_ITEMS.filter(it=>it.id!=='team').map((it,i)=>
+    `<button data-nav="${it.id}" class="${i===0?'active':''}" onclick="go('${it.id}')">${ICON[it.icon]}<span>${it.label}</span></button>`
+  ).join("");
+  document.getElementById('sideLogout').innerHTML = `${ICON.logout}<span>Sair</span>`;
+}
+buildNav();
+
+const RANGES = [
+  {id:'7d',label:'7 dias'},{id:'30d',label:'30 dias'},{id:'month',label:'Este mês'},
+  {id:'lastMonth',label:'Mês passado'},{id:'year',label:'Este ano'},{id:'lastYear',label:'Ano passado'},
+];
+let chartRange = '30d';
+let chartInstance = null;
+function buildRangeButtons(){
+  document.getElementById('rangeGroup').innerHTML = RANGES.map(r=>
+    `<button class="range-btn ${r.id===chartRange?'active':''}" onclick="setRange('${r.id}',this)">${r.label}</button>`
+  ).join("");
+}
+function setRange(r,btn){
+  chartRange=r;
+  document.querySelectorAll('.range-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderChart();
+}
+function buildSeries(range){
+  const approved = payments.filter(p=>p.status==="approved" && p.paid_at);
+  const now = new Date();
+  let start,end,grouping;
+  if(range==='7d'){ end=new Date(now); start=new Date(now); start.setDate(start.getDate()-6); grouping='day'; }
+  else if(range==='30d'){ end=new Date(now); start=new Date(now); start.setDate(start.getDate()-29); grouping='day'; }
+  else if(range==='month'){ start=new Date(now.getFullYear(),now.getMonth(),1); end=new Date(now); grouping='day'; }
+  else if(range==='lastMonth'){ start=new Date(now.getFullYear(),now.getMonth()-1,1); end=new Date(now.getFullYear(),now.getMonth(),0); grouping='day'; }
+  else if(range==='year'){ start=new Date(now.getFullYear(),0,1); end=new Date(now); grouping='month'; }
+  else { start=new Date(now.getFullYear()-1,0,1); end=new Date(now.getFullYear()-1,11,31); grouping='month'; }
+
+  const buckets={}; const keys=[]; const labels=[];
+  if(grouping==='day'){
+    for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
+      const k=d.toISOString().slice(0,10);
+      keys.push(k); labels.push(d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})); buckets[k]=0;
+    }
+  } else {
+    for(let d=new Date(start); d<=end; d.setMonth(d.getMonth()+1)){
+      const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+      keys.push(k); labels.push(d.toLocaleDateString("pt-BR",{month:"short"})); buckets[k]=0;
+    }
+  }
+  approved.forEach(p=>{
+    const d=new Date(p.paid_at);
+    if(d<start||d>end) return;
+    const k = grouping==='day' ? d.toISOString().slice(0,10) : `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+    if(k in buckets) buckets[k]+=p.amount_cents;
+  });
+  const data = keys.map(k=>buckets[k]);
+  const total = data.reduce((s,v)=>s+v,0);
+  return {labels,data,total};
+}
+function renderChart(){
+  const homeSection = document.getElementById("home");
+  if(!homeSection || homeSection.classList.contains("hidden")) return;
+  buildRangeButtons();
+  const {labels,data,total} = buildSeries(chartRange);
+  const totalEl = document.getElementById("chartTotal");
+  if(totalEl) totalEl.textContent = money(total);
+  const canvas = document.getElementById("revenueChart");
+  if(!canvas || typeof Chart==="undefined") return;
+  const ctx = canvas.getContext("2d");
+  const grad = ctx.createLinearGradient(0,0,0,220);
+  grad.addColorStop(0,"rgba(59,130,246,.9)");
+  grad.addColorStop(1,"rgba(34,211,238,.55)");
+  if(chartInstance) chartInstance.destroy();
+  chartInstance = new Chart(canvas,{
+    type:"bar",
+    data:{ labels, datasets:[{ data, backgroundColor:grad, borderRadius:6, maxBarThickness:26 }] },
+    options:{
+      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:"#0d1420", borderColor:"#19314d", borderWidth:1, callbacks:{ label:(c)=>money(c.raw) } } },
+      scales:{
+        x:{ grid:{display:false}, ticks:{ color:"#8695ab", font:{size:11} } },
+        y:{ grid:{ color:"rgba(255,255,255,.05)" }, ticks:{ color:"#8695ab", font:{size:11}, callback:(v)=>money(v) } }
+      }
+    }
+  });
+}
+
+let clients=[],projects=[],payments=[],messages=[],history=[];
 const $=id=>document.getElementById(id);
 const money=c=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format((c||0)/100);
 async function api(path,opt={}){opt.headers={...(opt.headers||{}),"Content-Type":"application/json","x-codelar-token":localStorage.getItem("codelarToken")||""};const r=await fetch(path,opt);if(!r.ok)throw new Error((await r.json()).error||"Erro");return r.json()}
@@ -97,16 +277,21 @@ async function doUnlock(){
   }
 }
 function logout(){localStorage.removeItem("codelarToken");$("app").classList.add("hidden");$("login").classList.remove("hidden")}
-function go(id,btn){document.querySelectorAll("main section").forEach(s=>s.classList.add("hidden"));$(id).classList.remove("hidden");document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));if(btn)btn.classList.add("active");if(id==="clients")renderClients();if(id==="projects")renderProjects();if(id==="finance")renderPayments()}
-async function start(){ $("app").classList.remove("hidden");await refresh();checkMP()}
-async function refresh(){try{const d=await api("/api/dashboard");$("mClients").textContent=d.clients;$("mProjects").textContent=d.projects;$("mReceived").textContent=money(d.received);$("mPending").textContent=money(d.pending);clients=await api("/api/clients");projects=await api("/api/projects");payments=await api("/api/payments");renderClients();renderProjects();renderPayments()}catch(e){if(e.message.includes("autenticado"))logout()}}
-async function checkMP(){try{const r=await api("/api/mercadopago/status");$("mpStatus").innerHTML=r.connected?'<span class="green">● Mercado Pago conectado no servidor</span>':'<span class="orange">● Mercado Pago não conectado</span>'}catch(e){}}
-async function syncMP(){try{const r=await api("/api/mercadopago/payments");$("mpStatus").innerHTML='<span class="green">● Sincronização concluída</span>';await refresh();alert(`${r.results.length} pagamentos retornados pelo Mercado Pago.`)}catch(e){alert(e.message)}}
-function renderClients(){let q=($("clientSearch")?.value||"").toLowerCase();let a=clients.filter(c=>(c.name+" "+(c.email||"")).toLowerCase().includes(q));$("clientsRows").innerHTML=a.map(c=>`<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.email||"—")}</td><td>${esc(c.phone||"—")}</td><td>${new Date(c.created_at).toLocaleDateString("pt-BR")}</td></tr>`).join("");$("clientsEmpty").classList.toggle("hidden",a.length>0)}
+function go(id){document.querySelectorAll("main section").forEach(s=>s.classList.add("hidden"));$(id).classList.remove("hidden");document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.nav===id));if(id==="clients")renderClients();if(id==="projects")renderProjects();if(id==="finance")renderPayments();if(id==="messages")renderMessages();if(id==="history")renderHistory();if(id==="home")renderChart()}
+async function start(){ $("app").classList.remove("hidden");await refresh()}
+async function refresh(){try{const d=await api("/api/dashboard");$("mClients").textContent=d.clients;$("mProjects").textContent=d.projects;$("mReceived").textContent=money(d.received);$("mPending").textContent=money(d.pending);clients=await api("/api/clients");projects=await api("/api/projects");payments=await api("/api/payments");messages=await api("/api/messages");history=await api("/api/clients/history");renderClients();renderProjects();renderPayments();renderMessages();renderHistory();renderChart()}catch(e){if(e.message.includes("autenticado"))logout()}}
+function renderClients(){let q=($("clientSearch")?.value||"").toLowerCase();let a=clients.filter(c=>(c.name+" "+(c.email||"")).toLowerCase().includes(q));$("clientsRows").innerHTML=a.map(c=>`<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.email||"—")}</td><td>${esc(c.site_type||"—")}</td><td>${money(c.amount_paid_cents)}</td><td>${c.client_date?new Date(c.client_date).toLocaleDateString("pt-BR"):new Date(c.created_at).toLocaleDateString("pt-BR")}</td><td><button class="btn" style="padding:7px 12px;font-size:12px" onclick="finishClient(${c.id})">Pedido finalizado</button></td></tr>`).join("");$("clientsEmpty").classList.toggle("hidden",a.length>0)}
+function renderHistory(){$("historyRows").innerHTML=history.map(c=>`<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.email||"—")}</td><td>${esc(c.site_type||"—")}</td><td style="max-width:260px;white-space:pre-wrap">${esc(c.site_specs||"—")}</td><td>${money(c.amount_paid_cents)}</td><td>${c.finished_at?new Date(c.finished_at).toLocaleDateString("pt-BR"):"—"}</td><td><button class="btn" style="padding:7px 12px;font-size:12px;background:transparent;border:1px solid var(--panel-brd);color:var(--muted)" onclick="reopenClient(${c.id})">Reabrir</button></td></tr>`).join("");$("historyEmpty").classList.toggle("hidden",history.length>0)}
 function renderProjects(){let a=projects;$("projectsRows").innerHTML=a.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(p.client_name||"—")}</td><td><span class="pill">${esc(p.status)}</span></td><td>${p.progress}%</td><td>${money(p.price_cents)}</td></tr>`).join("");$("projectsEmpty").classList.toggle("hidden",a.length>0)}
-function renderPayments(){$("paymentsRows").innerHTML=payments.map(p=>`<tr><td>${esc(p.mp_payment_id||"—")}</td><td>${esc(p.description||"—")}</td><td>${money(p.amount_cents)}</td><td><span class="pill ${p.status==="approved"?"ok":p.status==="pending"?"warn":""}">${esc(p.status)}</span></td><td>${p.paid_at?new Date(p.paid_at).toLocaleString("pt-BR"):"—"}</td></tr>`).join("");$("paymentsEmpty").classList.toggle("hidden",payments.length>0)}
-function openClient(){ $("modalTitle").textContent="Novo cliente";$("modalBody").innerHTML=`<div class="field"><label>Nome</label><input id="mn"></div><div class="field"><label>E-mail</label><input id="me" type="email"></div><div class="field"><label>Telefone</label><input id="mp"></div><div class="field"><label>Observações</label><textarea id="mo"></textarea></div><button class="btn full" onclick="saveClient()">Salvar cliente</button>`;$("modal").classList.remove("hidden")}
-async function saveClient(){try{await api("/api/clients",{method:"POST",body:JSON.stringify({name:$("mn").value,email:$("me").value,phone:$("mp").value,notes:$("mo").value})});closeModal();await refresh();go("clients")}catch(e){alert(e.message)}}
+function renderPayments(){$("paymentsRows").innerHTML=payments.map(p=>`<tr><td>${esc(p.client_name||"—")}</td><td>${esc(p.project_name||"—")}</td><td>${esc(p.description||"—")}</td><td>${money(p.amount_cents)}</td><td><span class="pill ${p.status==="approved"?"ok":p.status==="pending"?"warn":""}" style="cursor:pointer" onclick="togglePaymentStatus(${p.id},'${p.status}')">${esc(p.status==="approved"?"Pago":p.status==="pending"?"Pendente":p.status)}</span></td><td>${p.paid_at?new Date(p.paid_at).toLocaleDateString("pt-BR"):"—"}</td></tr>`).join("");$("paymentsEmpty").classList.toggle("hidden",payments.length>0)}
+async function togglePaymentStatus(id,current){const next=current==="approved"?"pending":"approved";try{await api(`/api/payments/${id}`,{method:"PUT",body:JSON.stringify({status:next})});await refresh();go("finance")}catch(e){alert(e.message)}}
+function openPayment(){if(!clients.length){alert("Cadastre um cliente real primeiro.");return}$("modalTitle").textContent="Novo pagamento";const projOpts=projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("");$("modalBody").innerHTML=`<div class="field"><label>Cliente</label><select id="fc">${clients.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></div><div class="field"><label>Projeto (opcional)</label><select id="fp"><option value="">—</option>${projOpts}</select></div><div class="field"><label>Descrição</label><input id="fd" placeholder="Ex: Sinal, parcela, valor total"></div><div class="field"><label>Valor (R$)</label><input id="fv" type="number" step="0.01" min="0"></div><div class="field"><label>Status</label><select id="fs"><option value="pending">Pendente</option><option value="approved">Pago</option></select></div><button class="btn full" onclick="savePayment()">Salvar pagamento</button>`;$("modal").classList.remove("hidden")}
+async function savePayment(){try{const status=$("fs").value;await api("/api/payments",{method:"POST",body:JSON.stringify({client_id:Number($("fc").value),project_id:$("fp").value?Number($("fp").value):null,description:$("fd").value,amount_cents:Math.round(Number($("fv").value||0)*100),status,paid_at:status==="approved"?new Date().toISOString():null})});closeModal();await refresh();go("finance")}catch(e){alert(e.message)}}
+function renderMessages(){if(!messages.length){$("messagesList").innerHTML="";$("messagesEmpty").classList.remove("hidden");return}$("messagesEmpty").classList.add("hidden");$("messagesList").innerHTML=messages.map(m=>`<div style="padding:12px 4px;border-bottom:1px solid #152a42"><div style="display:flex;justify-content:space-between;gap:10px"><b>${esc(m.client_name||"Contato desconhecido")}</b><span class="muted" style="font-size:12px">${new Date(m.created_at).toLocaleString("pt-BR")}</span></div><div class="muted" style="font-size:12px;margin:2px 0 4px">${m.direction==="inbound"?"Recebida":"Enviada"}</div><div>${esc(m.body)}</div></div>`).join("")}
+function openClient(){ $("modalTitle").textContent="Novo cliente";$("modalBody").innerHTML=`<div class="field"><label>Nome</label><input id="mn"></div><div class="field"><label>E-mail</label><input id="me" type="email"></div><div class="field"><label>Data do cliente</label><input id="mdate" type="date" value="${new Date().toISOString().slice(0,10)}"></div><div class="field"><label>Tipo de site</label><input id="mtype" placeholder="Ex: Institucional, E-commerce, App"></div><div class="field"><label>Especificações do site</label><textarea id="mspecs" placeholder="Funcionalidades, referências, observações..."></textarea></div><div class="field"><label>Valor pago (R$)</label><input id="mpaid" type="number" step="0.01" min="0"></div><button class="btn full" onclick="saveClient()">Salvar cliente</button>`;$("modal").classList.remove("hidden")}
+async function saveClient(){try{await api("/api/clients",{method:"POST",body:JSON.stringify({name:$("mn").value,email:$("me").value,client_date:$("mdate").value||null,site_type:$("mtype").value,site_specs:$("mspecs").value,amount_paid_cents:Math.round(Number($("mpaid").value||0)*100)})});closeModal();await refresh();go("clients")}catch(e){alert(e.message)}}
+async function finishClient(id){if(!confirm("Marcar esse pedido como finalizado? Ele vai para o Histórico.")) return;try{await api(`/api/clients/${id}/finish`,{method:"PUT",body:JSON.stringify({finished:1})});await refresh();go("clients")}catch(e){alert(e.message)}}
+async function reopenClient(id){try{await api(`/api/clients/${id}/finish`,{method:"PUT",body:JSON.stringify({finished:0})});await refresh();go("history")}catch(e){alert(e.message)}}
 function openProject(){if(!clients.length){alert("Cadastre um cliente real primeiro.");return}$("modalTitle").textContent="Novo projeto";$("modalBody").innerHTML=`<div class="field"><label>Cliente</label><select id="pc">${clients.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></div><div class="field"><label>Nome do projeto/pedido</label><input id="pn"></div><div class="field"><label>Descrição</label><textarea id="pd"></textarea></div><div class="field"><label>Valor (R$)</label><input id="pv" type="number" step="0.01" min="0"></div><button class="btn full" onclick="saveProject()">Salvar projeto</button>`;$("modal").classList.remove("hidden")}
 async function saveProject(){try{await api("/api/projects",{method:"POST",body:JSON.stringify({client_id:Number($("pc").value),name:$("pn").value,description:$("pd").value,price_cents:Math.round(Number($("pv").value||0)*100)})});closeModal();await refresh();go("projects")}catch(e){alert(e.message)}}
 function closeModal(){$("modal").classList.add("hidden")}
