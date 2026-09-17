@@ -62,6 +62,16 @@ CREATE TABLE IF NOT EXISTS messages (
 );
 `);
 
+// Migração segura: adiciona colunas novas em bancos que já existiam antes dessas features.
+const clientCols = db.prepare("PRAGMA table_info(clients)").all().map(c=>c.name);
+function addColIfMissing(col,defSql){ if(!clientCols.includes(col)){ db.exec(`ALTER TABLE clients ADD COLUMN ${defSql}`); clientCols.push(col); } }
+addColIfMissing("client_date","client_date TEXT");
+addColIfMissing("site_type","site_type TEXT");
+addColIfMissing("site_specs","site_specs TEXT");
+addColIfMissing("amount_paid_cents","amount_paid_cents INTEGER NOT NULL DEFAULT 0");
+addColIfMissing("finished","finished INTEGER NOT NULL DEFAULT 0");
+addColIfMissing("finished_at","finished_at TEXT");
+
 const hash = (s) => crypto.createHash("sha256").update(s).digest("hex");
 
 // Acesso por PIN único (uso pessoal, uma pessoa só).
@@ -91,7 +101,7 @@ app.post("/api/unlock",(req,res)=>{
 });
 
 app.get("/api/dashboard",auth,(req,res)=>{
-  const clients=db.prepare("SELECT COUNT(*) c FROM clients").get().c;
+  const clients=db.prepare("SELECT COUNT(*) c FROM clients WHERE finished=0").get().c;
   const projects=db.prepare("SELECT COUNT(*) c FROM projects").get().c;
   const active=db.prepare("SELECT COUNT(*) c FROM projects WHERE status NOT IN ('completed','cancelled')").get().c;
   const received=db.prepare("SELECT COALESCE(SUM(amount_cents),0) n FROM payments WHERE status='approved'").get().n;
@@ -100,13 +110,23 @@ app.get("/api/dashboard",auth,(req,res)=>{
 });
 
 app.get("/api/clients",auth,(req,res)=>{
-  res.json(db.prepare("SELECT * FROM clients ORDER BY id DESC").all());
+  res.json(db.prepare("SELECT * FROM clients WHERE finished=0 ORDER BY id DESC").all());
+});
+app.get("/api/clients/history",auth,(req,res)=>{
+  res.json(db.prepare("SELECT * FROM clients WHERE finished=1 ORDER BY finished_at DESC").all());
 });
 app.post("/api/clients",auth,(req,res)=>{
-  const {name,email="",phone="",notes=""}=req.body||{};
+  const {name,email="",phone="",client_date=null,site_type="",site_specs="",amount_paid_cents=0}=req.body||{};
   if(!name) return res.status(400).json({error:"Nome é obrigatório"});
-  const r=db.prepare("INSERT INTO clients(name,email,phone,notes) VALUES(?,?,?,?)").run(name,email,phone,notes);
+  const r=db.prepare(`INSERT INTO clients(name,email,phone,client_date,site_type,site_specs,amount_paid_cents) VALUES(?,?,?,?,?,?,?)`)
+    .run(name,email,phone,client_date,site_type,site_specs,Number(amount_paid_cents)||0);
   res.json({id:r.lastInsertRowid});
+});
+app.put("/api/clients/:id/finish",auth,(req,res)=>{
+  const {finished=1}=req.body||{};
+  const finished_at = Number(finished)===1 ? new Date().toISOString() : null;
+  db.prepare("UPDATE clients SET finished=?, finished_at=? WHERE id=?").run(Number(finished),finished_at,req.params.id);
+  res.json({ok:true});
 });
 
 app.get("/api/projects",auth,(req,res)=>{
@@ -121,7 +141,26 @@ app.post("/api/projects",auth,(req,res)=>{
 });
 
 app.get("/api/payments",auth,(req,res)=>{
-  res.json(db.prepare(`SELECT p.*, c.name client_name FROM payments p LEFT JOIN clients c ON c.id=p.client_id ORDER BY p.created_at DESC`).all());
+  res.json(db.prepare(`SELECT p.*, c.name client_name, pr.name project_name FROM payments p LEFT JOIN clients c ON c.id=p.client_id LEFT JOIN projects pr ON pr.id=p.project_id ORDER BY p.created_at DESC`).all());
+});
+app.post("/api/payments",auth,(req,res)=>{
+  const {client_id,project_id=null,amount_cents,status="pending",description="",paid_at=null}=req.body||{};
+  if(!client_id) return res.status(400).json({error:"Cliente é obrigatório"});
+  if(!amount_cents || Number(amount_cents)<=0) return res.status(400).json({error:"Valor é obrigatório"});
+  const r=db.prepare(`INSERT INTO payments(client_id,project_id,amount_cents,status,description,paid_at) VALUES(?,?,?,?,?,?)`)
+    .run(Number(client_id),project_id?Number(project_id):null,Number(amount_cents),status,description,paid_at);
+  res.json({id:r.lastInsertRowid});
+});
+app.put("/api/payments/:id",auth,(req,res)=>{
+  const {status}=req.body||{};
+  if(!status) return res.status(400).json({error:"Status é obrigatório"});
+  const paid_at = status==="approved" ? new Date().toISOString() : null;
+  db.prepare(`UPDATE payments SET status=?, paid_at=COALESCE(?,paid_at) WHERE id=?`).run(status,paid_at,req.params.id);
+  res.json({ok:true});
+});
+
+app.get("/api/messages",auth,(req,res)=>{
+  res.json(db.prepare(`SELECT m.*, c.name client_name FROM messages m LEFT JOIN clients c ON c.id=m.client_id ORDER BY m.created_at DESC LIMIT 200`).all());
 });
 
 app.post("/api/messages",auth,(req,res)=>{
@@ -129,56 +168,6 @@ app.post("/api/messages",auth,(req,res)=>{
   if(!body) return res.status(400).json({error:"Mensagem vazia"});
   const r=db.prepare("INSERT INTO messages(client_id,direction,body) VALUES(?,?,?)").run(client_id||null,"outbound",body);
   res.json({id:r.lastInsertRowid});
-});
-
-// Mercado Pago: leitura dos pagamentos da conta ligada ao token do servidor.
-// O Access Token nunca é enviado ao navegador.
-app.get("/api/mercadopago/status",auth,(req,res)=>{
-  res.json({connected:Boolean(process.env.MP_ACCESS_TOKEN)});
-});
-
-app.get("/api/mercadopago/payments",auth,async(req,res)=>{
-  if(!process.env.MP_ACCESS_TOKEN) return res.status(503).json({error:"Mercado Pago ainda não conectado. Configure MP_ACCESS_TOKEN no servidor."});
-  try{
-    const url = new URL("https://api.mercadopago.com/v1/payments/search");
-    url.searchParams.set("sort","date_created");
-    url.searchParams.set("criteria","desc");
-    url.searchParams.set("limit","50");
-    const r=await fetch(url,{headers:{Authorization:`Bearer ${process.env.MP_ACCESS_TOKEN}`,Accept:"application/json"}});
-    const data=await r.json();
-    if(!r.ok) return res.status(r.status).json({error:data});
-    const items=(data.results||[]).map(p=>({
-      id:String(p.id), amount_cents:Math.round((p.transaction_amount||0)*100),
-      status:p.status, description:p.description||"",
-      paid_at:p.date_approved||null, created_at:p.date_created||null
-    }));
-    res.json({results:items,paging:data.paging||{}});
-  }catch(e){res.status(500).json({error:"Falha ao consultar Mercado Pago"});}
-});
-
-// Webhook: atualiza/insere pagamento quando o Mercado Pago notificar um payment.
-// A validação completa da assinatura deve ser configurada com o segredo da aplicação.
-app.post("/api/webhooks/mercadopago",async(req,res)=>{
-  const type=req.query.type || req.body?.type;
-  const id=req.query["data.id"] || req.body?.data?.id;
-  if(type !== "payment" || !id) return res.sendStatus(200);
-  if(!process.env.MP_ACCESS_TOKEN) return res.sendStatus(200);
-  try{
-    const r=await fetch(`https://api.mercadopago.com/v1/payments/${encodeURIComponent(id)}`,{
-      headers:{Authorization:`Bearer ${process.env.MP_ACCESS_TOKEN}`,Accept:"application/json"}
-    });
-    if(!r.ok) return res.sendStatus(200);
-    const p=await r.json();
-    const cents=Math.round((p.transaction_amount||0)*100);
-    db.prepare(`
-      INSERT INTO payments(mp_payment_id,amount_cents,status,description,paid_at)
-      VALUES(?,?,?,?,?)
-      ON CONFLICT(mp_payment_id) DO UPDATE SET
-        amount_cents=excluded.amount_cents,status=excluded.status,
-        description=excluded.description,paid_at=excluded.paid_at
-    `).run(String(p.id),cents,p.status,p.description||"",p.date_approved||null);
-    res.sendStatus(200);
-  }catch(e){res.sendStatus(200);}
 });
 
 app.get("/*splat",(req,res)=>res.sendFile(process.cwd()+"/public/index.html"));
