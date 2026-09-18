@@ -27,31 +27,6 @@ CREATE TABLE IF NOT EXISTS clients (
   notes TEXT,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-CREATE TABLE IF NOT EXISTS projects (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  client_id INTEGER,
-  name TEXT NOT NULL,
-  description TEXT,
-  status TEXT NOT NULL DEFAULT 'pending',
-  progress INTEGER NOT NULL DEFAULT 0,
-  price_cents INTEGER NOT NULL DEFAULT 0,
-  due_date TEXT,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY(client_id) REFERENCES clients(id)
-);
-CREATE TABLE IF NOT EXISTS payments (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  client_id INTEGER,
-  project_id INTEGER,
-  mp_payment_id TEXT UNIQUE,
-  amount_cents INTEGER NOT NULL DEFAULT 0,
-  status TEXT NOT NULL,
-  description TEXT,
-  paid_at TEXT,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY(client_id) REFERENCES clients(id),
-  FOREIGN KEY(project_id) REFERENCES projects(id)
-);
 CREATE TABLE IF NOT EXISTS messages (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   client_id INTEGER,
@@ -101,12 +76,13 @@ app.post("/api/unlock",(req,res)=>{
 });
 
 app.get("/api/dashboard",auth,(req,res)=>{
-  const clients=db.prepare("SELECT COUNT(*) c FROM clients WHERE finished=0").get().c;
-  const projects=db.prepare("SELECT COUNT(*) c FROM projects").get().c;
-  const active=db.prepare("SELECT COUNT(*) c FROM projects WHERE status NOT IN ('completed','cancelled')").get().c;
-  const received=db.prepare("SELECT COALESCE(SUM(amount_cents),0) n FROM payments WHERE status='approved'").get().n;
-  const pending=db.prepare("SELECT COALESCE(SUM(amount_cents),0) n FROM payments WHERE status IN ('pending','in_process')").get().n;
-  res.json({clients,projects,active,received,pending});
+  const clientsActive=db.prepare("SELECT COUNT(*) c FROM clients WHERE finished=0").get().c;
+  const finished=db.prepare("SELECT COUNT(*) c FROM clients WHERE finished=1").get().c;
+  const totalReceived=db.prepare("SELECT COALESCE(SUM(amount_paid_cents),0) n FROM clients").get().n;
+  const now=new Date();
+  const monthStart=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-01`;
+  const monthReceived=db.prepare("SELECT COALESCE(SUM(amount_paid_cents),0) n FROM clients WHERE client_date>=?").get(monthStart).n;
+  res.json({clientsActive,finished,totalReceived,monthReceived});
 });
 
 app.get("/api/clients",auth,(req,res)=>{
@@ -126,36 +102,6 @@ app.put("/api/clients/:id/finish",auth,(req,res)=>{
   const {finished=1}=req.body||{};
   const finished_at = Number(finished)===1 ? new Date().toISOString() : null;
   db.prepare("UPDATE clients SET finished=?, finished_at=? WHERE id=?").run(Number(finished),finished_at,req.params.id);
-  res.json({ok:true});
-});
-
-app.get("/api/projects",auth,(req,res)=>{
-  res.json(db.prepare(`SELECT p.*, c.name client_name FROM projects p LEFT JOIN clients c ON c.id=p.client_id ORDER BY p.id DESC`).all());
-});
-app.post("/api/projects",auth,(req,res)=>{
-  const {client_id,name,description="",status="pending",progress=0,price_cents=0,due_date=null}=req.body||{};
-  if(!name) return res.status(400).json({error:"Nome do projeto é obrigatório"});
-  const r=db.prepare(`INSERT INTO projects(client_id,name,description,status,progress,price_cents,due_date) VALUES(?,?,?,?,?,?,?)`)
-    .run(client_id||null,name,description,status,Math.max(0,Math.min(100,Number(progress)||0)),Number(price_cents)||0,due_date);
-  res.json({id:r.lastInsertRowid});
-});
-
-app.get("/api/payments",auth,(req,res)=>{
-  res.json(db.prepare(`SELECT p.*, c.name client_name, pr.name project_name FROM payments p LEFT JOIN clients c ON c.id=p.client_id LEFT JOIN projects pr ON pr.id=p.project_id ORDER BY p.created_at DESC`).all());
-});
-app.post("/api/payments",auth,(req,res)=>{
-  const {client_id,project_id=null,amount_cents,status="pending",description="",paid_at=null}=req.body||{};
-  if(!client_id) return res.status(400).json({error:"Cliente é obrigatório"});
-  if(!amount_cents || Number(amount_cents)<=0) return res.status(400).json({error:"Valor é obrigatório"});
-  const r=db.prepare(`INSERT INTO payments(client_id,project_id,amount_cents,status,description,paid_at) VALUES(?,?,?,?,?,?)`)
-    .run(Number(client_id),project_id?Number(project_id):null,Number(amount_cents),status,description,paid_at);
-  res.json({id:r.lastInsertRowid});
-});
-app.put("/api/payments/:id",auth,(req,res)=>{
-  const {status}=req.body||{};
-  if(!status) return res.status(400).json({error:"Status é obrigatório"});
-  const paid_at = status==="approved" ? new Date().toISOString() : null;
-  db.prepare(`UPDATE payments SET status=?, paid_at=COALESCE(?,paid_at) WHERE id=?`).run(status,paid_at,req.params.id);
   res.json({ok:true});
 });
 
