@@ -118,26 +118,28 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue)}
 <main class="main">
 <section id="home"><div class="top"><div><h1>Dashboard</h1><div class="muted">Somente informações cadastradas ou recebidas.</div></div><button class="btn" onclick="openClient()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>Cliente</button></div>
 <div class="grid">
-<div class="card metric"><div class="ico b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.8 20c0-3.6 2.8-6.2 6.2-6.2s6.2 2.6 6.2 6.2"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15 14.6c2.6.5 4.4 2.4 4.4 5.4"/></svg></div><div class="label">Clientes</div><div class="value" id="mClients">0</div></div>
-<div class="card metric"><div class="ico p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="11.5" rx="2.2"/><path d="M8.5 8V6.3A2 2 0 0 1 10.5 4.3h3a2 2 0 0 1 2 2V8"/><path d="M3 13.2h18"/></svg></div><div class="label">Projetos</div><div class="value" id="mProjects">0</div></div>
-<div class="card metric"><div class="ico g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.3 12.3 2.6 2.6 5-5.2"/></svg></div><div class="label">Recebido</div><div class="value green" id="mReceived">R$ 0,00</div></div>
-<div class="card metric"><div class="ico o"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg></div><div class="label">Pendente</div><div class="value orange" id="mPending">R$ 0,00</div></div>
-<div class="card full">
-  <div class="card-head">
-    <div><div class="title">Faturamento</div><div class="chart-total">Total no período: <b id="chartTotal">R$ 0,00</b></div></div>
-    <div class="range-group" id="rangeGroup"></div>
-  </div>
-  <canvas id="revenueChart" height="90"></canvas>
-</div>
+<div class="card metric"><div class="ico b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.8 20c0-3.6 2.8-6.2 6.2-6.2s6.2 2.6 6.2 6.2"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15 14.6c2.6.5 4.4 2.4 4.4 5.4"/></svg></div><div class="label">Clientes ativos</div><div class="value" id="mClients">0</div></div>
+<div class="card metric"><div class="ico p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.3 12.3 2.6 2.6 5-5.2"/></svg></div><div class="label">Finalizados</div><div class="value" id="mFinished">0</div></div>
+<div class="card metric"><div class="ico g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.2"/><path d="M3 10.2h18"/><circle cx="16.6" cy="14.3" r="1.1" fill="currentColor" stroke="none"/></svg></div><div class="label">Total recebido</div><div class="value green" id="mReceived">R$ 0,00</div></div>
+<div class="card metric"><div class="ico o"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg></div><div class="label">Este mês</div><div class="value orange" id="mMonth">R$ 0,00</div></div>
 </div></section>
 
-<section id="clients" class="hidden"><div class="top"><div><h1>Clientes</h1><div class="muted">Cadastre somente clientes reais.</div></div><button class="btn" onclick="openClient()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>Cliente</button></div><div class="card"><div class="toolbar"><input id="clientSearch" placeholder="Pesquisar..." oninput="renderClients()"></div><div class="table-wrap"><table class="table"><thead><tr><th>Nome</th><th>E-mail</th><th>Tipo de site</th><th>Valor pago</th><th>Data</th><th></th></tr></thead><tbody id="clientsRows"></tbody></table></div><div id="clientsEmpty" class="empty hidden"><strong>Nenhum cliente cadastrado</strong>Use “+ Cliente” para registrar seu primeiro cliente.</div></div></section>
+<section id="clients" class="hidden"><div class="top"><div><h1>Clientes</h1><div class="muted">Cadastre somente clientes reais.</div></div><button class="btn" onclick="openClient()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>Cliente</button></div><div class="card"><div class="toolbar"><input id="clientSearch" placeholder="Pesquisar..." oninput="renderClients()"></div><div class="table-wrap"><table class="table"><thead><tr><th>Nome</th><th>E-mail</th><th>Tipo de site</th><th>Valor pago</th><th>Data do pedido</th><th></th></tr></thead><tbody id="clientsRows"></tbody></table></div><div id="clientsEmpty" class="empty hidden"><strong>Nenhum cliente cadastrado</strong>Use “+ Cliente” para registrar seu primeiro cliente.</div></div></section>
 
 <section id="history" class="hidden"><div class="top"><div><h1>Histórico</h1><div class="muted">Pedidos finalizados.</div></div></div><div class="card"><div class="table-wrap"><table class="table"><thead><tr><th>Nome</th><th>E-mail</th><th>Tipo de site</th><th>Especificações</th><th>Valor pago</th><th>Finalizado em</th><th></th></tr></thead><tbody id="historyRows"></tbody></table></div><div id="historyEmpty" class="empty hidden"><strong>Nenhum pedido finalizado ainda</strong>Quando você clicar em “Pedido finalizado” em um cliente, ele aparece aqui.</div></div></section>
 
-<section id="projects" class="hidden"><div class="top"><div><h1>Projetos</h1><div class="muted">Cada projeto é um pedido real de cliente.</div></div><button class="btn" onclick="openProject()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>Projeto</button></div><div class="card"><div class="table-wrap"><table class="table"><thead><tr><th>Projeto</th><th>Cliente</th><th>Status</th><th>Progresso</th><th>Valor</th></tr></thead><tbody id="projectsRows"></tbody></table></div><div id="projectsEmpty" class="empty hidden"><strong>Nenhum projeto cadastrado</strong>Seus pedidos aparecerão aqui depois que você registrar o primeiro.</div></div></section>
-
-<section id="finance" class="hidden"><div class="top"><div><h1>Financeiro</h1><div class="muted">Pagamentos registrados manualmente.</div></div><button class="btn" onclick="openPayment()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>Pagamento</button></div><div class="card"><div class="title">Pagamentos</div><div class="table-wrap"><table class="table"><thead><tr><th>Cliente</th><th>Projeto</th><th>Descrição</th><th>Valor</th><th>Status</th><th>Data</th></tr></thead><tbody id="paymentsRows"></tbody></table></div><div id="paymentsEmpty" class="empty hidden"><strong>Nenhum pagamento registrado</strong>Use “+ Pagamento” para registrar o primeiro.</div></div></section>
+<section id="charts" class="hidden"><div class="top"><div><h1>Gráficos</h1><div class="muted">Visão do seu faturamento e da sua carteira de clientes.</div></div></div>
+<div class="grid">
+  <div class="card full">
+    <div class="card-head">
+      <div><div class="title">Faturamento</div><div class="chart-total">Total no período: <b id="chartTotal">R$ 0,00</b></div></div>
+      <div class="range-group" id="rangeGroup"></div>
+    </div>
+    <canvas id="revenueChart" height="90"></canvas>
+  </div>
+  <div class="card wide"><div class="title">Novos clientes por mês</div><canvas id="growthChart" height="140"></canvas></div>
+  <div class="card wide"><div class="title">Tipos de site</div><canvas id="typeChart" height="140"></canvas></div>
+</div></section>
 
 <section id="messages" class="hidden"><div class="top"><div><h1>Mensagens</h1><div class="muted">Histórico de conversas com clientes.</div></div></div><div class="card"><div class="table-wrap" id="messagesList"></div><div id="messagesEmpty" class="empty hidden"><strong>Nenhuma mensagem ainda</strong>Registre conversas com clientes aqui conforme for atendendo.</div></div></section>
 
@@ -163,9 +165,8 @@ const ICON = {
 const NAV_ITEMS = [
   {id:'home',icon:'home',label:'Dashboard'},
   {id:'clients',icon:'users',label:'Clientes'},
-  {id:'projects',icon:'briefcase',label:'Projetos'},
-  {id:'finance',icon:'wallet',label:'Financeiro'},
   {id:'history',icon:'check',label:'Histórico'},
+  {id:'charts',icon:'wallet',label:'Gráficos'},
   {id:'messages',icon:'message',label:'Mensagens'},
   {id:'team',icon:'team',label:'Equipe'},
 ];
@@ -198,7 +199,7 @@ function setRange(r,btn){
   renderChart();
 }
 function buildSeries(range){
-  const approved = payments.filter(p=>p.status==="approved" && p.paid_at);
+  const all = [...clients, ...history].filter(c=>c.amount_paid_cents>0 && c.client_date);
   const now = new Date();
   let start,end,grouping;
   if(range==='7d'){ end=new Date(now); start=new Date(now); start.setDate(start.getDate()-6); grouping='day'; }
@@ -220,54 +221,106 @@ function buildSeries(range){
       keys.push(k); labels.push(d.toLocaleDateString("pt-BR",{month:"short"})); buckets[k]=0;
     }
   }
-  approved.forEach(p=>{
-    const d=new Date(p.paid_at);
+  all.forEach(c=>{
+    const d=new Date(c.client_date);
     if(d<start||d>end) return;
     const k = grouping==='day' ? d.toISOString().slice(0,10) : `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
-    if(k in buckets) buckets[k]+=p.amount_cents;
+    if(k in buckets) buckets[k]+=c.amount_paid_cents;
   });
   const data = keys.map(k=>buckets[k]);
   const total = data.reduce((s,v)=>s+v,0);
   return {labels,data,total};
 }
 function renderChart(){
-  const homeSection = document.getElementById("home");
-  if(!homeSection || homeSection.classList.contains("hidden")) return;
+  const chartsSection = document.getElementById("charts");
+  if(!chartsSection || chartsSection.classList.contains("hidden")) return;
   buildRangeButtons();
   const {labels,data,total} = buildSeries(chartRange);
   const totalEl = document.getElementById("chartTotal");
   if(totalEl) totalEl.textContent = money(total);
   const canvas = document.getElementById("revenueChart");
+  if(canvas && typeof Chart!=="undefined"){
+    const ctx = canvas.getContext("2d");
+    const grad = ctx.createLinearGradient(0,0,0,220);
+    grad.addColorStop(0,"rgba(59,130,246,.9)");
+    grad.addColorStop(1,"rgba(34,211,238,.55)");
+    if(chartInstance) chartInstance.destroy();
+    chartInstance = new Chart(canvas,{
+      type:"bar",
+      data:{ labels, datasets:[{ data, backgroundColor:grad, borderRadius:6, maxBarThickness:26 }] },
+      options:{
+        plugins:{ legend:{display:false}, tooltip:{ backgroundColor:"#0d1420", borderColor:"#19314d", borderWidth:1, callbacks:{ label:(c)=>money(c.raw) } } },
+        scales:{
+          x:{ grid:{display:false}, ticks:{ color:"#8695ab", font:{size:11} } },
+          y:{ grid:{ color:"rgba(255,255,255,.05)" }, ticks:{ color:"#8695ab", font:{size:11}, callback:(v)=>money(v) } }
+        }
+      }
+    });
+  }
+  renderGrowthChart();
+  renderTypeChart();
+}
+let growthChartInstance=null, typeChartInstance=null;
+function renderGrowthChart(){
+  const canvas=document.getElementById("growthChart");
   if(!canvas || typeof Chart==="undefined") return;
-  const ctx = canvas.getContext("2d");
-  const grad = ctx.createLinearGradient(0,0,0,220);
-  grad.addColorStop(0,"rgba(59,130,246,.9)");
-  grad.addColorStop(1,"rgba(34,211,238,.55)");
-  if(chartInstance) chartInstance.destroy();
-  chartInstance = new Chart(canvas,{
-    type:"bar",
-    data:{ labels, datasets:[{ data, backgroundColor:grad, borderRadius:6, maxBarThickness:26 }] },
+  const all=[...clients,...history].filter(c=>c.client_date);
+  const now=new Date();
+  const labels=[]; const keys=[]; const buckets={};
+  for(let i=5;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+    keys.push(k); labels.push(d.toLocaleDateString("pt-BR",{month:"short"})); buckets[k]=0;
+  }
+  all.forEach(c=>{
+    const d=new Date(c.client_date);
+    const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+    if(k in buckets) buckets[k]+=1;
+  });
+  const data=keys.map(k=>buckets[k]);
+  if(growthChartInstance) growthChartInstance.destroy();
+  growthChartInstance=new Chart(canvas,{
+    type:"line",
+    data:{ labels, datasets:[{ data, borderColor:"#22d3ee", backgroundColor:"rgba(34,211,238,.12)", fill:true, tension:.35, pointRadius:3, pointBackgroundColor:"#22d3ee" }] },
     options:{
-      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:"#0d1420", borderColor:"#19314d", borderWidth:1, callbacks:{ label:(c)=>money(c.raw) } } },
+      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:"#0d1420", borderColor:"#19314d", borderWidth:1 } },
       scales:{
         x:{ grid:{display:false}, ticks:{ color:"#8695ab", font:{size:11} } },
-        y:{ grid:{ color:"rgba(255,255,255,.05)" }, ticks:{ color:"#8695ab", font:{size:11}, callback:(v)=>money(v) } }
+        y:{ grid:{ color:"rgba(255,255,255,.05)" }, ticks:{ color:"#8695ab", font:{size:11}, stepSize:1, precision:0 } }
       }
     }
   });
 }
+function renderTypeChart(){
+  const canvas=document.getElementById("typeChart");
+  if(!canvas || typeof Chart==="undefined") return;
+  const all=[...clients,...history];
+  const counts={};
+  all.forEach(c=>{ const t=(c.site_type||"Não informado").trim()||"Não informado"; counts[t]=(counts[t]||0)+1; });
+  const labels=Object.keys(counts); const data=Object.values(counts);
+  const palette=["#3b82f6","#22d3ee","#a78bfa","#34d399","#fbbf24","#f87171","#f472b6"];
+  if(typeChartInstance) typeChartInstance.destroy();
+  typeChartInstance=new Chart(canvas,{
+    type:"doughnut",
+    data:{ labels, datasets:[{ data, backgroundColor:labels.map((_,i)=>palette[i%palette.length]), borderColor:"#0b111d", borderWidth:3 }] },
+    options:{
+      plugins:{ legend:{ position:"bottom", labels:{ color:"#c8d3e2", font:{size:11.5}, boxWidth:11, padding:14 } }, tooltip:{ backgroundColor:"#0d1420", borderColor:"#19314d", borderWidth:1 } },
+      cutout:"62%"
+    }
+  });
+}
 
-let clients=[],projects=[],payments=[],messages=[],history=[];
+let clients=[],messages=[],history=[];
 const $=id=>document.getElementById(id);
 const money=c=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format((c||0)/100);
-async function api(path,opt={}){opt.headers={...(opt.headers||{}),"Content-Type":"application/json","x-codelar-token":localStorage.getItem("codelarToken")||""};const r=await fetch(path,opt);if(!r.ok)throw new Error((await r.json()).error||"Erro");return r.json()}
+async function api(path,opt={}){opt.headers={...(opt.headers||{}),"Content-Type":"application/json","x-codelar-token":sessionStorage.getItem("codelarToken")||""};const r=await fetch(path,opt);if(!r.ok)throw new Error((await r.json()).error||"Erro");return r.json()}
 async function doUnlock(){
   const pin=$("pin").value;
   try{
     const r=await fetch("/api/unlock",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin})});
     const d=await r.json();
     if(!r.ok) throw new Error(d.error||"PIN incorreto");
-    localStorage.setItem("codelarToken",d.token);
+    sessionStorage.setItem("codelarToken",d.token);
     $("login").classList.add("hidden");
     start();
   }catch(e){
@@ -276,27 +329,20 @@ async function doUnlock(){
     $("pin").value="";
   }
 }
-function logout(){localStorage.removeItem("codelarToken");$("app").classList.add("hidden");$("login").classList.remove("hidden")}
-function go(id){document.querySelectorAll("main section").forEach(s=>s.classList.add("hidden"));$(id).classList.remove("hidden");document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.nav===id));if(id==="clients")renderClients();if(id==="projects")renderProjects();if(id==="finance")renderPayments();if(id==="messages")renderMessages();if(id==="history")renderHistory();if(id==="home")renderChart()}
+function logout(){sessionStorage.removeItem("codelarToken");$("app").classList.add("hidden");$("login").classList.remove("hidden")}
+function go(id){document.querySelectorAll("main section").forEach(s=>s.classList.add("hidden"));$(id).classList.remove("hidden");document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.nav===id));if(id==="clients")renderClients();if(id==="messages")renderMessages();if(id==="history")renderHistory();if(id==="charts")renderChart()}
 async function start(){ $("app").classList.remove("hidden");await refresh()}
-async function refresh(){try{const d=await api("/api/dashboard");$("mClients").textContent=d.clients;$("mProjects").textContent=d.projects;$("mReceived").textContent=money(d.received);$("mPending").textContent=money(d.pending);clients=await api("/api/clients");projects=await api("/api/projects");payments=await api("/api/payments");messages=await api("/api/messages");history=await api("/api/clients/history");renderClients();renderProjects();renderPayments();renderMessages();renderHistory();renderChart()}catch(e){if(e.message.includes("autenticado"))logout()}}
+async function refresh(){try{const d=await api("/api/dashboard");$("mClients").textContent=d.clientsActive;$("mFinished").textContent=d.finished;$("mReceived").textContent=money(d.totalReceived);$("mMonth").textContent=money(d.monthReceived);clients=await api("/api/clients");messages=await api("/api/messages");history=await api("/api/clients/history");renderClients();renderMessages();renderHistory();renderChart()}catch(e){if(e.message.includes("autenticado"))logout()}}
 function renderClients(){let q=($("clientSearch")?.value||"").toLowerCase();let a=clients.filter(c=>(c.name+" "+(c.email||"")).toLowerCase().includes(q));$("clientsRows").innerHTML=a.map(c=>`<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.email||"—")}</td><td>${esc(c.site_type||"—")}</td><td>${money(c.amount_paid_cents)}</td><td>${c.client_date?new Date(c.client_date).toLocaleDateString("pt-BR"):new Date(c.created_at).toLocaleDateString("pt-BR")}</td><td><button class="btn" style="padding:7px 12px;font-size:12px" onclick="finishClient(${c.id})">Pedido finalizado</button></td></tr>`).join("");$("clientsEmpty").classList.toggle("hidden",a.length>0)}
 function renderHistory(){$("historyRows").innerHTML=history.map(c=>`<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.email||"—")}</td><td>${esc(c.site_type||"—")}</td><td style="max-width:260px;white-space:pre-wrap">${esc(c.site_specs||"—")}</td><td>${money(c.amount_paid_cents)}</td><td>${c.finished_at?new Date(c.finished_at).toLocaleDateString("pt-BR"):"—"}</td><td><button class="btn" style="padding:7px 12px;font-size:12px;background:transparent;border:1px solid var(--panel-brd);color:var(--muted)" onclick="reopenClient(${c.id})">Reabrir</button></td></tr>`).join("");$("historyEmpty").classList.toggle("hidden",history.length>0)}
-function renderProjects(){let a=projects;$("projectsRows").innerHTML=a.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(p.client_name||"—")}</td><td><span class="pill">${esc(p.status)}</span></td><td>${p.progress}%</td><td>${money(p.price_cents)}</td></tr>`).join("");$("projectsEmpty").classList.toggle("hidden",a.length>0)}
-function renderPayments(){$("paymentsRows").innerHTML=payments.map(p=>`<tr><td>${esc(p.client_name||"—")}</td><td>${esc(p.project_name||"—")}</td><td>${esc(p.description||"—")}</td><td>${money(p.amount_cents)}</td><td><span class="pill ${p.status==="approved"?"ok":p.status==="pending"?"warn":""}" style="cursor:pointer" onclick="togglePaymentStatus(${p.id},'${p.status}')">${esc(p.status==="approved"?"Pago":p.status==="pending"?"Pendente":p.status)}</span></td><td>${p.paid_at?new Date(p.paid_at).toLocaleDateString("pt-BR"):"—"}</td></tr>`).join("");$("paymentsEmpty").classList.toggle("hidden",payments.length>0)}
-async function togglePaymentStatus(id,current){const next=current==="approved"?"pending":"approved";try{await api(`/api/payments/${id}`,{method:"PUT",body:JSON.stringify({status:next})});await refresh();go("finance")}catch(e){alert(e.message)}}
-function openPayment(){if(!clients.length){alert("Cadastre um cliente real primeiro.");return}$("modalTitle").textContent="Novo pagamento";const projOpts=projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("");$("modalBody").innerHTML=`<div class="field"><label>Cliente</label><select id="fc">${clients.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></div><div class="field"><label>Projeto (opcional)</label><select id="fp"><option value="">—</option>${projOpts}</select></div><div class="field"><label>Descrição</label><input id="fd" placeholder="Ex: Sinal, parcela, valor total"></div><div class="field"><label>Valor (R$)</label><input id="fv" type="number" step="0.01" min="0"></div><div class="field"><label>Status</label><select id="fs"><option value="pending">Pendente</option><option value="approved">Pago</option></select></div><button class="btn full" onclick="savePayment()">Salvar pagamento</button>`;$("modal").classList.remove("hidden")}
-async function savePayment(){try{const status=$("fs").value;await api("/api/payments",{method:"POST",body:JSON.stringify({client_id:Number($("fc").value),project_id:$("fp").value?Number($("fp").value):null,description:$("fd").value,amount_cents:Math.round(Number($("fv").value||0)*100),status,paid_at:status==="approved"?new Date().toISOString():null})});closeModal();await refresh();go("finance")}catch(e){alert(e.message)}}
 function renderMessages(){if(!messages.length){$("messagesList").innerHTML="";$("messagesEmpty").classList.remove("hidden");return}$("messagesEmpty").classList.add("hidden");$("messagesList").innerHTML=messages.map(m=>`<div style="padding:12px 4px;border-bottom:1px solid #152a42"><div style="display:flex;justify-content:space-between;gap:10px"><b>${esc(m.client_name||"Contato desconhecido")}</b><span class="muted" style="font-size:12px">${new Date(m.created_at).toLocaleString("pt-BR")}</span></div><div class="muted" style="font-size:12px;margin:2px 0 4px">${m.direction==="inbound"?"Recebida":"Enviada"}</div><div>${esc(m.body)}</div></div>`).join("")}
-function openClient(){ $("modalTitle").textContent="Novo cliente";$("modalBody").innerHTML=`<div class="field"><label>Nome</label><input id="mn"></div><div class="field"><label>E-mail</label><input id="me" type="email"></div><div class="field"><label>Data do cliente</label><input id="mdate" type="date" value="${new Date().toISOString().slice(0,10)}"></div><div class="field"><label>Tipo de site</label><input id="mtype" placeholder="Ex: Institucional, E-commerce, App"></div><div class="field"><label>Especificações do site</label><textarea id="mspecs" placeholder="Funcionalidades, referências, observações..."></textarea></div><div class="field"><label>Valor pago (R$)</label><input id="mpaid" type="number" step="0.01" min="0"></div><button class="btn full" onclick="saveClient()">Salvar cliente</button>`;$("modal").classList.remove("hidden")}
+function openClient(){ $("modalTitle").textContent="Novo cliente";$("modalBody").innerHTML=`<div class="field"><label>Nome</label><input id="mn"></div><div class="field"><label>E-mail</label><input id="me" type="email"></div><div class="field"><label>Data do pedido</label><input id="mdate" type="date" value="${new Date().toISOString().slice(0,10)}"></div><div class="field"><label>Tipo de site</label><input id="mtype" placeholder="Ex: Institucional, E-commerce, App"></div><div class="field"><label>Especificações do site</label><textarea id="mspecs" placeholder="Funcionalidades, referências, observações..."></textarea></div><div class="field"><label>Valor pago (R$)</label><input id="mpaid" type="number" step="0.01" min="0"></div><button class="btn full" onclick="saveClient()">Salvar cliente</button>`;$("modal").classList.remove("hidden")}
 async function saveClient(){try{await api("/api/clients",{method:"POST",body:JSON.stringify({name:$("mn").value,email:$("me").value,client_date:$("mdate").value||null,site_type:$("mtype").value,site_specs:$("mspecs").value,amount_paid_cents:Math.round(Number($("mpaid").value||0)*100)})});closeModal();await refresh();go("clients")}catch(e){alert(e.message)}}
 async function finishClient(id){if(!confirm("Marcar esse pedido como finalizado? Ele vai para o Histórico.")) return;try{await api(`/api/clients/${id}/finish`,{method:"PUT",body:JSON.stringify({finished:1})});await refresh();go("clients")}catch(e){alert(e.message)}}
 async function reopenClient(id){try{await api(`/api/clients/${id}/finish`,{method:"PUT",body:JSON.stringify({finished:0})});await refresh();go("history")}catch(e){alert(e.message)}}
-function openProject(){if(!clients.length){alert("Cadastre um cliente real primeiro.");return}$("modalTitle").textContent="Novo projeto";$("modalBody").innerHTML=`<div class="field"><label>Cliente</label><select id="pc">${clients.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></div><div class="field"><label>Nome do projeto/pedido</label><input id="pn"></div><div class="field"><label>Descrição</label><textarea id="pd"></textarea></div><div class="field"><label>Valor (R$)</label><input id="pv" type="number" step="0.01" min="0"></div><button class="btn full" onclick="saveProject()">Salvar projeto</button>`;$("modal").classList.remove("hidden")}
-async function saveProject(){try{await api("/api/projects",{method:"POST",body:JSON.stringify({client_id:Number($("pc").value),name:$("pn").value,description:$("pd").value,price_cents:Math.round(Number($("pv").value||0)*100)})});closeModal();await refresh();go("projects")}catch(e){alert(e.message)}}
 function closeModal(){$("modal").classList.add("hidden")}
 function esc(s){return String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
-if(localStorage.getItem("codelarToken")){
+if(sessionStorage.getItem("codelarToken")){
   $("login").classList.add("hidden");
   start();
 }
