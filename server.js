@@ -80,8 +80,8 @@ app.get("/api/dashboard",auth,(req,res)=>{
   const totalReceived=db.prepare("SELECT COALESCE(SUM(amount_paid_cents),0) n FROM clients").get().n;
   const now=new Date();
   const monthStart=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-01`;
-  const monthReceived=db.prepare("SELECT COALESCE(SUM(amount_paid_cents),0) n FROM clients WHERE client_date>=?").get(monthStart).n;
-  const salesMonth=db.prepare("SELECT COUNT(*) c FROM clients WHERE client_date>=? AND amount_paid_cents>0").get(monthStart).c;
+  const monthReceived=db.prepare("SELECT COALESCE(SUM(amount_paid_cents),0) n FROM clients WHERE COALESCE(client_date,created_at)>=?").get(monthStart).n;
+  const salesMonth=db.prepare("SELECT COUNT(*) c FROM clients WHERE COALESCE(client_date,created_at)>=? AND amount_paid_cents>0").get(monthStart).c;
   res.json({finished,totalReceived,monthReceived,salesMonth});
 });
 
@@ -102,6 +102,10 @@ app.put("/api/clients/:id/finish",auth,(req,res)=>{
   const {finished=1}=req.body||{};
   const finished_at = Number(finished)===1 ? new Date().toISOString() : null;
   db.prepare("UPDATE clients SET finished=?, finished_at=? WHERE id=?").run(Number(finished),finished_at,req.params.id);
+  res.json({ok:true});
+});
+app.delete("/api/clients/:id",auth,(req,res)=>{
+  db.prepare("DELETE FROM clients WHERE id=?").run(req.params.id);
   res.json({ok:true});
 });
 
