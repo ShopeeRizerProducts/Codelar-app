@@ -116,30 +116,27 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue)}
 <div class="side-bottom"><button onclick="logout()" id="sideLogout"></button></div>
 </aside>
 <main class="main">
-<section id="home"><div class="top"><div><h1>Dashboard</h1><div class="muted">Somente informações cadastradas ou recebidas.</div></div><button class="btn" onclick="openClient()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>Cliente</button></div>
+<section id="home"><div class="top"><div><h1>Dashboard</h1><div class="muted">Vendas e faturamento registrados.</div></div><button class="btn" onclick="openClient()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>Cliente</button></div>
 <div class="grid">
-<div class="card metric"><div class="ico b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.8 20c0-3.6 2.8-6.2 6.2-6.2s6.2 2.6 6.2 6.2"/><circle cx="17.2" cy="9" r="2.5"/><path d="M15 14.6c2.6.5 4.4 2.4 4.4 5.4"/></svg></div><div class="label">Clientes ativos</div><div class="value" id="mClients">0</div></div>
-<div class="card metric"><div class="ico p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.3 12.3 2.6 2.6 5-5.2"/></svg></div><div class="label">Finalizados</div><div class="value" id="mFinished">0</div></div>
 <div class="card metric"><div class="ico g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.2"/><path d="M3 10.2h18"/><circle cx="16.6" cy="14.3" r="1.1" fill="currentColor" stroke="none"/></svg></div><div class="label">Total recebido</div><div class="value green" id="mReceived">R$ 0,00</div></div>
-<div class="card metric"><div class="ico o"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg></div><div class="label">Este mês</div><div class="value orange" id="mMonth">R$ 0,00</div></div>
+<div class="card metric"><div class="ico o"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg></div><div class="label">Recebido este mês</div><div class="value orange" id="mMonth">R$ 0,00</div></div>
+<div class="card metric"><div class="ico b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-9" stroke-linejoin="round"/><path d="M14 7h6v6"/></svg></div><div class="label">Vendas este mês</div><div class="value" id="mSalesMonth">0</div></div>
+<div class="card metric"><div class="ico p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.3 12.3 2.6 2.6 5-5.2"/></svg></div><div class="label">Pedidos finalizados</div><div class="value" id="mFinished">0</div></div>
+
+<div class="card full">
+  <div class="card-head">
+    <div><div class="title">Faturamento</div><div class="chart-total">Total no período: <b id="chartTotal">R$ 0,00</b></div></div>
+    <div class="range-group" id="rangeGroup"></div>
+  </div>
+  <canvas id="revenueChart" height="90"></canvas>
+</div>
+<div class="card wide"><div class="title">Vendas por mês</div><canvas id="salesChart" height="140"></canvas></div>
+<div class="card wide"><div class="title">Tipos de site</div><canvas id="typeChart" height="140"></canvas></div>
 </div></section>
 
 <section id="clients" class="hidden"><div class="top"><div><h1>Clientes</h1><div class="muted">Cadastre somente clientes reais.</div></div><button class="btn" onclick="openClient()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>Cliente</button></div><div class="card"><div class="toolbar"><input id="clientSearch" placeholder="Pesquisar..." oninput="renderClients()"></div><div class="table-wrap"><table class="table"><thead><tr><th>Nome</th><th>E-mail</th><th>Tipo de site</th><th>Valor pago</th><th>Data do pedido</th><th></th></tr></thead><tbody id="clientsRows"></tbody></table></div><div id="clientsEmpty" class="empty hidden"><strong>Nenhum cliente cadastrado</strong>Use “+ Cliente” para registrar seu primeiro cliente.</div></div></section>
 
 <section id="history" class="hidden"><div class="top"><div><h1>Histórico</h1><div class="muted">Pedidos finalizados.</div></div></div><div class="card"><div class="table-wrap"><table class="table"><thead><tr><th>Nome</th><th>E-mail</th><th>Tipo de site</th><th>Especificações</th><th>Valor pago</th><th>Finalizado em</th><th></th></tr></thead><tbody id="historyRows"></tbody></table></div><div id="historyEmpty" class="empty hidden"><strong>Nenhum pedido finalizado ainda</strong>Quando você clicar em “Pedido finalizado” em um cliente, ele aparece aqui.</div></div></section>
-
-<section id="charts" class="hidden"><div class="top"><div><h1>Gráficos</h1><div class="muted">Visão do seu faturamento e da sua carteira de clientes.</div></div></div>
-<div class="grid">
-  <div class="card full">
-    <div class="card-head">
-      <div><div class="title">Faturamento</div><div class="chart-total">Total no período: <b id="chartTotal">R$ 0,00</b></div></div>
-      <div class="range-group" id="rangeGroup"></div>
-    </div>
-    <canvas id="revenueChart" height="90"></canvas>
-  </div>
-  <div class="card wide"><div class="title">Novos clientes por mês</div><canvas id="growthChart" height="140"></canvas></div>
-  <div class="card wide"><div class="title">Tipos de site</div><canvas id="typeChart" height="140"></canvas></div>
-</div></section>
 
 <section id="messages" class="hidden"><div class="top"><div><h1>Mensagens</h1><div class="muted">Histórico de conversas com clientes.</div></div></div><div class="card"><div class="table-wrap" id="messagesList"></div><div id="messagesEmpty" class="empty hidden"><strong>Nenhuma mensagem ainda</strong>Registre conversas com clientes aqui conforme for atendendo.</div></div></section>
 
@@ -166,7 +163,6 @@ const NAV_ITEMS = [
   {id:'home',icon:'home',label:'Dashboard'},
   {id:'clients',icon:'users',label:'Clientes'},
   {id:'history',icon:'check',label:'Histórico'},
-  {id:'charts',icon:'wallet',label:'Gráficos'},
   {id:'messages',icon:'message',label:'Mensagens'},
   {id:'team',icon:'team',label:'Equipe'},
 ];
@@ -231,9 +227,31 @@ function buildSeries(range){
   const total = data.reduce((s,v)=>s+v,0);
   return {labels,data,total};
 }
+const dataLabelPlugin = {
+  id:'dataLabel',
+  afterDatasetsDraw(chart){
+    const {ctx}=chart;
+    chart.data.datasets.forEach((ds,i)=>{
+      if(ds.hideLabels) return;
+      const meta=chart.getDatasetMeta(i);
+      meta.data.forEach((el,idx)=>{
+        const val=ds.data[idx];
+        if(!val) return;
+        const label = ds.labelFormat ? ds.labelFormat(val) : String(val);
+        ctx.save();
+        ctx.fillStyle="#dce8f5";
+        ctx.font="700 11px 'Plus Jakarta Sans', sans-serif";
+        ctx.textAlign="center";
+        ctx.fillText(label, el.x, el.y - 8);
+        ctx.restore();
+      });
+    });
+  }
+};
+
 function renderChart(){
-  const chartsSection = document.getElementById("charts");
-  if(!chartsSection || chartsSection.classList.contains("hidden")) return;
+  const homeSection = document.getElementById("home");
+  if(!homeSection || homeSection.classList.contains("hidden")) return;
   buildRangeButtons();
   const {labels,data,total} = buildSeries(chartRange);
   const totalEl = document.getElementById("chartTotal");
@@ -247,24 +265,26 @@ function renderChart(){
     if(chartInstance) chartInstance.destroy();
     chartInstance = new Chart(canvas,{
       type:"bar",
-      data:{ labels, datasets:[{ data, backgroundColor:grad, borderRadius:6, maxBarThickness:26 }] },
+      data:{ labels, datasets:[{ data, backgroundColor:grad, borderRadius:6, maxBarThickness:26, labelFormat:(v)=>v?money(v):"" }] },
       options:{
+        layout:{ padding:{ top:22 } },
         plugins:{ legend:{display:false}, tooltip:{ backgroundColor:"#0d1420", borderColor:"#19314d", borderWidth:1, callbacks:{ label:(c)=>money(c.raw) } } },
         scales:{
           x:{ grid:{display:false}, ticks:{ color:"#8695ab", font:{size:11} } },
           y:{ grid:{ color:"rgba(255,255,255,.05)" }, ticks:{ color:"#8695ab", font:{size:11}, callback:(v)=>money(v) } }
         }
-      }
+      },
+      plugins:[dataLabelPlugin]
     });
   }
-  renderGrowthChart();
+  renderSalesChart();
   renderTypeChart();
 }
-let growthChartInstance=null, typeChartInstance=null;
-function renderGrowthChart(){
-  const canvas=document.getElementById("growthChart");
+let salesChartInstance=null, typeChartInstance=null;
+function renderSalesChart(){
+  const canvas=document.getElementById("salesChart");
   if(!canvas || typeof Chart==="undefined") return;
-  const all=[...clients,...history].filter(c=>c.client_date);
+  const sales=[...clients,...history].filter(c=>c.amount_paid_cents>0 && c.client_date);
   const now=new Date();
   const labels=[]; const keys=[]; const buckets={};
   for(let i=5;i>=0;i--){
@@ -272,23 +292,25 @@ function renderGrowthChart(){
     const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
     keys.push(k); labels.push(d.toLocaleDateString("pt-BR",{month:"short"})); buckets[k]=0;
   }
-  all.forEach(c=>{
+  sales.forEach(c=>{
     const d=new Date(c.client_date);
     const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
     if(k in buckets) buckets[k]+=1;
   });
   const data=keys.map(k=>buckets[k]);
-  if(growthChartInstance) growthChartInstance.destroy();
-  growthChartInstance=new Chart(canvas,{
-    type:"line",
-    data:{ labels, datasets:[{ data, borderColor:"#22d3ee", backgroundColor:"rgba(34,211,238,.12)", fill:true, tension:.35, pointRadius:3, pointBackgroundColor:"#22d3ee" }] },
+  if(salesChartInstance) salesChartInstance.destroy();
+  salesChartInstance=new Chart(canvas,{
+    type:"bar",
+    data:{ labels, datasets:[{ data, backgroundColor:"#34d399", borderRadius:6, maxBarThickness:30, labelFormat:(v)=>String(v) }] },
     options:{
+      layout:{ padding:{ top:22 } },
       plugins:{ legend:{display:false}, tooltip:{ backgroundColor:"#0d1420", borderColor:"#19314d", borderWidth:1 } },
       scales:{
         x:{ grid:{display:false}, ticks:{ color:"#8695ab", font:{size:11} } },
         y:{ grid:{ color:"rgba(255,255,255,.05)" }, ticks:{ color:"#8695ab", font:{size:11}, stepSize:1, precision:0 } }
       }
-    }
+    },
+    plugins:[dataLabelPlugin]
   });
 }
 function renderTypeChart(){
@@ -330,9 +352,9 @@ async function doUnlock(){
   }
 }
 function logout(){sessionStorage.removeItem("codelarToken");$("app").classList.add("hidden");$("login").classList.remove("hidden")}
-function go(id){document.querySelectorAll("main section").forEach(s=>s.classList.add("hidden"));$(id).classList.remove("hidden");document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.nav===id));if(id==="clients")renderClients();if(id==="messages")renderMessages();if(id==="history")renderHistory();if(id==="charts")renderChart()}
+function go(id){document.querySelectorAll("main section").forEach(s=>s.classList.add("hidden"));$(id).classList.remove("hidden");document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.nav===id));if(id==="clients")renderClients();if(id==="messages")renderMessages();if(id==="history")renderHistory();if(id==="home")renderChart()}
 async function start(){ $("app").classList.remove("hidden");await refresh()}
-async function refresh(){try{const d=await api("/api/dashboard");$("mClients").textContent=d.clientsActive;$("mFinished").textContent=d.finished;$("mReceived").textContent=money(d.totalReceived);$("mMonth").textContent=money(d.monthReceived);clients=await api("/api/clients");messages=await api("/api/messages");history=await api("/api/clients/history");renderClients();renderMessages();renderHistory();renderChart()}catch(e){if(e.message.includes("autenticado"))logout()}}
+async function refresh(){try{const d=await api("/api/dashboard");$("mFinished").textContent=d.finished;$("mReceived").textContent=money(d.totalReceived);$("mMonth").textContent=money(d.monthReceived);$("mSalesMonth").textContent=d.salesMonth;clients=await api("/api/clients");messages=await api("/api/messages");history=await api("/api/clients/history");renderClients();renderMessages();renderHistory();renderChart()}catch(e){if(e.message.includes("autenticado"))logout()}}
 function renderClients(){let q=($("clientSearch")?.value||"").toLowerCase();let a=clients.filter(c=>(c.name+" "+(c.email||"")).toLowerCase().includes(q));$("clientsRows").innerHTML=a.map(c=>`<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.email||"—")}</td><td>${esc(c.site_type||"—")}</td><td>${money(c.amount_paid_cents)}</td><td>${c.client_date?new Date(c.client_date).toLocaleDateString("pt-BR"):new Date(c.created_at).toLocaleDateString("pt-BR")}</td><td><button class="btn" style="padding:7px 12px;font-size:12px" onclick="finishClient(${c.id})">Pedido finalizado</button></td></tr>`).join("");$("clientsEmpty").classList.toggle("hidden",a.length>0)}
 function renderHistory(){$("historyRows").innerHTML=history.map(c=>`<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.email||"—")}</td><td>${esc(c.site_type||"—")}</td><td style="max-width:260px;white-space:pre-wrap">${esc(c.site_specs||"—")}</td><td>${money(c.amount_paid_cents)}</td><td>${c.finished_at?new Date(c.finished_at).toLocaleDateString("pt-BR"):"—"}</td><td><button class="btn" style="padding:7px 12px;font-size:12px;background:transparent;border:1px solid var(--panel-brd);color:var(--muted)" onclick="reopenClient(${c.id})">Reabrir</button></td></tr>`).join("");$("historyEmpty").classList.toggle("hidden",history.length>0)}
 function renderMessages(){if(!messages.length){$("messagesList").innerHTML="";$("messagesEmpty").classList.remove("hidden");return}$("messagesEmpty").classList.add("hidden");$("messagesList").innerHTML=messages.map(m=>`<div style="padding:12px 4px;border-bottom:1px solid #152a42"><div style="display:flex;justify-content:space-between;gap:10px"><b>${esc(m.client_name||"Contato desconhecido")}</b><span class="muted" style="font-size:12px">${new Date(m.created_at).toLocaleString("pt-BR")}</span></div><div class="muted" style="font-size:12px;margin:2px 0 4px">${m.direction==="inbound"?"Recebida":"Enviada"}</div><div>${esc(m.body)}</div></div>`).join("")}
