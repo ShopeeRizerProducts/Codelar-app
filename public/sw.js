@@ -1,5 +1,5 @@
-const CACHE = "codelar-os-v2";
-const CORE_ASSETS = ["/manifest.json", "/icon-192.png", "/icon-512.png"];
+const CACHE = "codelar-os-v3";
+const CORE_ASSETS = ["/manifest.json", "/icon-192.png", "/icon-512.png", "/logo-mark.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(CORE_ASSETS)));

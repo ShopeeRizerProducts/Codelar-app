@@ -84,12 +84,23 @@ h1,h2,h3{font-family:"Plus Jakarta Sans",sans-serif;letter-spacing:-.02em}
 .field{margin-bottom:14px}.field label{display:block;color:var(--muted);font-size:12px;font-weight:600;margin-bottom:6px}
 input,textarea,select{width:100%;background:#0d1626;border:1px solid var(--panel-brd);color:var(--text);border-radius:10px;padding:11px 13px;outline:0;transition:border-color .15s}
 input:focus,textarea:focus,select:focus{border-color:var(--blue)}
-.login{min-height:100dvh;display:grid;place-items:center;padding:20px}
-.login-card{width:min(370px,100%);background:linear-gradient(180deg,#0d1420,#080c15);border:1px solid var(--panel-brd);border-radius:22px;padding:30px 28px;box-shadow:0 25px 70px rgba(0,0,0,.45)}
-.login .brand{display:flex;align-items:center;gap:11px;margin-bottom:8px;font-size:18px;font-weight:700}.login .brand img{width:32px;height:32px;border-radius:9px}
-.login .sub{color:var(--muted);font-size:13px;margin-bottom:22px}
-.hint{color:var(--muted);font-size:12px;margin-top:12px;text-align:center}
-.hint.err{color:var(--red)}
+.login{min-height:100dvh;display:grid;place-items:center;padding:20px;position:relative;overflow:hidden}
+.login::before{content:"";position:absolute;width:480px;height:480px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,.22),transparent 68%);top:-140px;left:50%;transform:translateX(-50%);pointer-events:none}
+.login::after{content:"";position:absolute;width:380px;height:380px;border-radius:50%;background:radial-gradient(circle,rgba(34,211,238,.14),transparent 70%);bottom:-160px;right:-80px;pointer-events:none}
+.login-card{position:relative;width:min(380px,100%);background:linear-gradient(180deg,rgba(13,20,32,.9),rgba(8,12,21,.92));border:1px solid var(--panel-brd);border-radius:26px;padding:38px 30px 32px;box-shadow:0 30px 90px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.02) inset;backdrop-filter:blur(10px);text-align:center}
+.login-glow{width:84px;height:84px;margin:0 auto 18px;border-radius:22px;display:grid;place-items:center;background:radial-gradient(circle,rgba(59,130,246,.25),transparent 70%);position:relative}
+.login-glow::before{content:"";position:absolute;inset:0;border-radius:22px;background:linear-gradient(135deg,rgba(59,130,246,.35),rgba(34,211,238,.15));filter:blur(14px);z-index:0}
+.login-glow img{width:64px;height:64px;position:relative;z-index:1;filter:drop-shadow(0 6px 18px rgba(34,211,238,.35))}
+.login .brand{justify-content:center;margin-bottom:4px;font-size:19px;font-weight:750}
+.login .sub{color:var(--muted);font-size:13px;margin-bottom:26px}
+.pin-field{position:relative;margin-bottom:16px}
+.pin-field svg{position:absolute;left:15px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted);pointer-events:none}
+.pin-field input{padding:14px 14px 14px 42px;font-size:19px;letter-spacing:.4em;text-align:center;background:#0a1220;border:1.5px solid var(--panel-brd)}
+.pin-field input:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(59,130,246,.14)}
+.login-card.shake{animation:shake .4s}
+@keyframes shake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(3px)}30%,50%,70%{transform:translateX(-6px)}40%,60%{transform:translateX(6px)}}
+.hint{color:var(--muted);font-size:12px;margin-top:14px;text-align:center}
+.hint.err{color:var(--red);font-weight:600}
 @media(max-width:900px){.side{width:76px}.side .brand span,.side nav span,.side-bottom span{display:none}.side .brand{justify-content:center}.main{margin-left:76px}.grid{grid-template-columns:1fr 1fr}.wide{grid-column:span 2}}
 @media(max-width:650px){
  body{padding-bottom:78px}.side{display:none}.main{margin:0;padding:16px 14px 24px}.top{align-items:flex-start}.top h1{font-size:21px}.top .btn{padding:10px 13px}.grid{grid-template-columns:1fr 1fr;gap:10px}.card{padding:15px;border-radius:16px}.metric .value{font-size:19px}.metric .label{font-size:11px}.wide{grid-column:span 2}
@@ -103,10 +114,14 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue)}
 </style>
 </head>
 <body>
-<div id="login" class="login"><div class="login-card">
-<div class="brand"><img src="/icon-192.png"><span>Codelar <b style="color:#22d3ee">OS</b></span></div>
+<div id="login" class="login"><div class="login-card" id="loginCard">
+<div class="login-glow"><img src="/logo-mark.png"></div>
+<div class="brand">Codelar <b style="color:#22d3ee">OS</b></div>
 <div class="sub">Painel de gestão — dados reais da sua operação</div>
-<div class="field"><label>PIN</label><input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="••••••••" onkeydown="if(event.key==='Enter')doUnlock()"></div>
+<div class="pin-field">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="9.5" rx="2.2"/><path d="M7.5 10.5V7.2a4.5 4.5 0 0 1 9 0v3.3"/></svg>
+<input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="Digite seu PIN" onkeydown="if(event.key==='Enter')doUnlock()">
+</div>
 <button class="btn full" onclick="doUnlock()">Desbloquear</button>
 <div class="hint" id="loginHint">Painel de uso pessoal — só você tem o PIN.</div>
 </div></div>
@@ -195,7 +210,7 @@ function setRange(r,btn){
   renderChart();
 }
 function buildSeries(range){
-  const all = [...clients, ...history].filter(c=>c.amount_paid_cents>0 && c.client_date);
+  const all = [...clients, ...history].filter(c=>c.amount_paid_cents>0).map(c=>({...c, _date:c.client_date||c.created_at}));
   const now = new Date();
   let start,end,grouping;
   if(range==='7d'){ end=new Date(now); start=new Date(now); start.setDate(start.getDate()-6); grouping='day'; }
@@ -218,7 +233,7 @@ function buildSeries(range){
     }
   }
   all.forEach(c=>{
-    const d=new Date(c.client_date);
+    const d=new Date(c._date);
     if(d<start||d>end) return;
     const k = grouping==='day' ? d.toISOString().slice(0,10) : `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
     if(k in buckets) buckets[k]+=c.amount_paid_cents;
@@ -284,7 +299,7 @@ let salesChartInstance=null, typeChartInstance=null;
 function renderSalesChart(){
   const canvas=document.getElementById("salesChart");
   if(!canvas || typeof Chart==="undefined") return;
-  const sales=[...clients,...history].filter(c=>c.amount_paid_cents>0 && c.client_date);
+  const sales=[...clients,...history].filter(c=>c.amount_paid_cents>0);
   const now=new Date();
   const labels=[]; const keys=[]; const buckets={};
   for(let i=5;i>=0;i--){
@@ -293,7 +308,7 @@ function renderSalesChart(){
     keys.push(k); labels.push(d.toLocaleDateString("pt-BR",{month:"short"})); buckets[k]=0;
   }
   sales.forEach(c=>{
-    const d=new Date(c.client_date);
+    const d=new Date(c.client_date||c.created_at);
     const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
     if(k in buckets) buckets[k]+=1;
   });
@@ -349,6 +364,8 @@ async function doUnlock(){
     $("loginHint").textContent=e.message;
     $("loginHint").classList.add("err");
     $("pin").value="";
+    const card=$("loginCard");
+    card.classList.remove("shake"); void card.offsetWidth; card.classList.add("shake");
   }
 }
 function logout(){sessionStorage.removeItem("codelarToken");$("app").classList.add("hidden");$("login").classList.remove("hidden")}
@@ -356,12 +373,21 @@ function go(id){document.querySelectorAll("main section").forEach(s=>s.classList
 async function start(){ $("app").classList.remove("hidden");await refresh()}
 async function refresh(){try{const d=await api("/api/dashboard");$("mFinished").textContent=d.finished;$("mReceived").textContent=money(d.totalReceived);$("mMonth").textContent=money(d.monthReceived);$("mSalesMonth").textContent=d.salesMonth;clients=await api("/api/clients");messages=await api("/api/messages");history=await api("/api/clients/history");renderClients();renderMessages();renderHistory();renderChart()}catch(e){if(e.message.includes("autenticado"))logout()}}
 function renderClients(){let q=($("clientSearch")?.value||"").toLowerCase();let a=clients.filter(c=>(c.name+" "+(c.email||"")).toLowerCase().includes(q));$("clientsRows").innerHTML=a.map(c=>`<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.email||"—")}</td><td>${esc(c.site_type||"—")}</td><td>${money(c.amount_paid_cents)}</td><td>${c.client_date?new Date(c.client_date).toLocaleDateString("pt-BR"):new Date(c.created_at).toLocaleDateString("pt-BR")}</td><td><button class="btn" style="padding:7px 12px;font-size:12px" onclick="finishClient(${c.id})">Pedido finalizado</button></td></tr>`).join("");$("clientsEmpty").classList.toggle("hidden",a.length>0)}
-function renderHistory(){$("historyRows").innerHTML=history.map(c=>`<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.email||"—")}</td><td>${esc(c.site_type||"—")}</td><td style="max-width:260px;white-space:pre-wrap">${esc(c.site_specs||"—")}</td><td>${money(c.amount_paid_cents)}</td><td>${c.finished_at?new Date(c.finished_at).toLocaleDateString("pt-BR"):"—"}</td><td><button class="btn" style="padding:7px 12px;font-size:12px;background:transparent;border:1px solid var(--panel-brd);color:var(--muted)" onclick="reopenClient(${c.id})">Reabrir</button></td></tr>`).join("");$("historyEmpty").classList.toggle("hidden",history.length>0)}
+function renderHistory(){$("historyRows").innerHTML=history.map(c=>`<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.email||"—")}</td><td>${esc(c.site_type||"—")}</td><td style="max-width:260px;white-space:pre-wrap">${esc(c.site_specs||"—")}</td><td>${money(c.amount_paid_cents)}</td><td>${c.finished_at?new Date(c.finished_at).toLocaleDateString("pt-BR"):"—"}</td><td style="display:flex;gap:6px"><button class="btn" style="padding:7px 12px;font-size:12px;background:transparent;border:1px solid var(--panel-brd);color:var(--muted)" onclick="reopenClient(${c.id})">Reabrir</button><button class="btn" style="padding:7px 12px;font-size:12px;background:transparent;border:1px solid rgba(248,113,113,.35);color:var(--red)" onclick="cancelClient(${c.id})">Anular</button></td></tr>`).join("");$("historyEmpty").classList.toggle("hidden",history.length>0)}
 function renderMessages(){if(!messages.length){$("messagesList").innerHTML="";$("messagesEmpty").classList.remove("hidden");return}$("messagesEmpty").classList.add("hidden");$("messagesList").innerHTML=messages.map(m=>`<div style="padding:12px 4px;border-bottom:1px solid #152a42"><div style="display:flex;justify-content:space-between;gap:10px"><b>${esc(m.client_name||"Contato desconhecido")}</b><span class="muted" style="font-size:12px">${new Date(m.created_at).toLocaleString("pt-BR")}</span></div><div class="muted" style="font-size:12px;margin:2px 0 4px">${m.direction==="inbound"?"Recebida":"Enviada"}</div><div>${esc(m.body)}</div></div>`).join("")}
-function openClient(){ $("modalTitle").textContent="Novo cliente";$("modalBody").innerHTML=`<div class="field"><label>Nome</label><input id="mn"></div><div class="field"><label>E-mail</label><input id="me" type="email"></div><div class="field"><label>Data do pedido</label><input id="mdate" type="date" value="${new Date().toISOString().slice(0,10)}"></div><div class="field"><label>Tipo de site</label><input id="mtype" placeholder="Ex: Institucional, E-commerce, App"></div><div class="field"><label>Especificações do site</label><textarea id="mspecs" placeholder="Funcionalidades, referências, observações..."></textarea></div><div class="field"><label>Valor pago (R$)</label><input id="mpaid" type="number" step="0.01" min="0"></div><button class="btn full" onclick="saveClient()">Salvar cliente</button>`;$("modal").classList.remove("hidden")}
+const PACKAGES = [
+  {label:"Essencial — R$ 350 (até 3 páginas)", price:350},
+  {label:"Profissional — R$ 600 (até 6 páginas)", price:600},
+  {label:"Premium — R$ 1.000 (até 10 páginas)", price:1000},
+  {label:"Aplicativo — a partir de R$ 1.000", price:1000},
+  {label:"Personalizado — valor livre", price:0},
+];
+function openClient(){ $("modalTitle").textContent="Novo cliente";$("modalBody").innerHTML=`<div class="field"><label>Nome</label><input id="mn"></div><div class="field"><label>E-mail</label><input id="me" type="email"></div><div class="field"><label>Data do pedido</label><input id="mdate" type="date" value="${new Date().toISOString().slice(0,10)}"></div><div class="field"><label>Pacote</label><select id="mtype" onchange="onPackageChange()">${PACKAGES.map(p=>`<option value="${esc(p.label)}" data-price="${p.price}">${esc(p.label)}</option>`).join("")}</select></div><div class="field"><label>Especificações do site</label><textarea id="mspecs" placeholder="Funcionalidades, referências, observações..."></textarea></div><div class="field"><label>Valor pago (R$)</label><input id="mpaid" type="number" step="0.01" min="0" value="${PACKAGES[0].price}"><div class="hint" style="text-align:left;margin-top:6px">Vem preenchido com o preço do pacote — edite se tiver adicional ou desconto.</div></div><button class="btn full" onclick="saveClient()">Salvar cliente</button>`;$("modal").classList.remove("hidden")}
+function onPackageChange(){const opt=$("mtype").selectedOptions[0];$("mpaid").value=opt.dataset.price;}
 async function saveClient(){try{await api("/api/clients",{method:"POST",body:JSON.stringify({name:$("mn").value,email:$("me").value,client_date:$("mdate").value||null,site_type:$("mtype").value,site_specs:$("mspecs").value,amount_paid_cents:Math.round(Number($("mpaid").value||0)*100)})});closeModal();await refresh();go("clients")}catch(e){alert(e.message)}}
 async function finishClient(id){if(!confirm("Marcar esse pedido como finalizado? Ele vai para o Histórico.")) return;try{await api(`/api/clients/${id}/finish`,{method:"PUT",body:JSON.stringify({finished:1})});await refresh();go("clients")}catch(e){alert(e.message)}}
 async function reopenClient(id){try{await api(`/api/clients/${id}/finish`,{method:"PUT",body:JSON.stringify({finished:0})});await refresh();go("history")}catch(e){alert(e.message)}}
+async function cancelClient(id){if(!confirm("Anular esse pedido apaga o registro pra sempre — sem volta. Continuar?")) return;try{await api(`/api/clients/${id}`,{method:"DELETE"});await refresh();go("history")}catch(e){alert(e.message)}}
 function closeModal(){$("modal").classList.add("hidden")}
 function esc(s){return String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
 if(sessionStorage.getItem("codelarToken")){
