@@ -76,13 +76,13 @@ app.post("/api/unlock",(req,res)=>{
 });
 
 app.get("/api/dashboard",auth,(req,res)=>{
-  const clientsActive=db.prepare("SELECT COUNT(*) c FROM clients WHERE finished=0").get().c;
   const finished=db.prepare("SELECT COUNT(*) c FROM clients WHERE finished=1").get().c;
   const totalReceived=db.prepare("SELECT COALESCE(SUM(amount_paid_cents),0) n FROM clients").get().n;
   const now=new Date();
   const monthStart=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-01`;
   const monthReceived=db.prepare("SELECT COALESCE(SUM(amount_paid_cents),0) n FROM clients WHERE client_date>=?").get(monthStart).n;
-  res.json({clientsActive,finished,totalReceived,monthReceived});
+  const salesMonth=db.prepare("SELECT COUNT(*) c FROM clients WHERE client_date>=? AND amount_paid_cents>0").get(monthStart).c;
+  res.json({finished,totalReceived,monthReceived,salesMonth});
 });
 
 app.get("/api/clients",auth,(req,res)=>{
