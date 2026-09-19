@@ -1,4 +1,4 @@
-const CACHE = "codelar-os-v3";
+const CACHE = "codelar-os-v4";
 const CORE_ASSETS = ["/manifest.json", "/icon-192.png", "/icon-512.png", "/logo-mark.png"];
 
 self.addEventListener("install", (event) => {
@@ -21,6 +21,10 @@ self.addEventListener("activate", (event) => {
 // Only truly static assets (icons, manifest) are cache-first, since those rarely change.
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
+
+  // Never touch cross-origin requests (CDN scripts, fonts, etc.) — let the browser handle those natively.
+  if (url.origin !== self.location.origin) return;
+
   const isStaticAsset = CORE_ASSETS.includes(url.pathname);
 
   if (isStaticAsset) {

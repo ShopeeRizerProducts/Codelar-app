@@ -17,7 +17,7 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 "Plus Jakarta Sans",Inter,system-ui,-apple-system,Segoe UI,sans-serif;-webkit-font-smoothing:antialiased}
-body{background-image:radial-gradient(circle at 12% -10%,rgba(59,130,246,.16),transparent 42%),radial-gradient(circle at 100% 0%,rgba(34,211,238,.08),transparent 38%);background-attachment:fixed}
+body{background-image:radial-gradient(circle at 12% -10%,rgba(59,130,246,.16),transparent 42%),radial-gradient(circle at 100% 0%,rgba(34,211,238,.08),transparent 38%)}
 button,input,textarea,select{font:inherit;color:inherit}
 button{cursor:pointer}.hidden{display:none!important}
 h1,h2,h3{font-family:"Plus Jakarta Sans",sans-serif;letter-spacing:-.02em}
@@ -74,7 +74,7 @@ h1,h2,h3{font-family:"Plus Jakarta Sans",sans-serif;letter-spacing:-.02em}
 .range-btn.active{background:var(--grad);color:#04101f}
 .chart-total{font-size:13px;color:var(--muted)}.chart-total b{color:#fff;font-size:15px}
 
-.modal{position:fixed;inset:0;background:rgba(3,5,10,.6);backdrop-filter:blur(3px);display:grid;place-items:center;padding:18px;z-index:30}
+.modal{position:fixed;inset:0;background:rgba(3,5,10,.75);display:grid;place-items:center;padding:18px;z-index:30}
 .modal-card{width:min(480px,100%);background:linear-gradient(180deg,#0d1420,#090e17);border:1px solid var(--panel-brd);border-radius:var(--r-lg);padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
 .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .modal-head h3{font-size:17px;margin:0}
@@ -87,7 +87,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue)}
 .login{min-height:100dvh;display:grid;place-items:center;padding:20px;position:relative;overflow:hidden}
 .login::before{content:"";position:absolute;width:480px;height:480px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,.22),transparent 68%);top:-140px;left:50%;transform:translateX(-50%);pointer-events:none}
 .login::after{content:"";position:absolute;width:380px;height:380px;border-radius:50%;background:radial-gradient(circle,rgba(34,211,238,.14),transparent 70%);bottom:-160px;right:-80px;pointer-events:none}
-.login-card{position:relative;width:min(380px,100%);background:linear-gradient(180deg,rgba(13,20,32,.9),rgba(8,12,21,.92));border:1px solid var(--panel-brd);border-radius:26px;padding:38px 30px 32px;box-shadow:0 30px 90px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.02) inset;backdrop-filter:blur(10px);text-align:center}
+.login-card{position:relative;width:min(380px,100%);background:linear-gradient(180deg,rgba(13,20,32,.96),rgba(8,12,21,.98));border:1px solid var(--panel-brd);border-radius:26px;padding:38px 30px 32px;box-shadow:0 20px 50px rgba(0,0,0,.4);text-align:center}
 .login-glow{width:84px;height:84px;margin:0 auto 18px;border-radius:22px;display:grid;place-items:center;background:radial-gradient(circle,rgba(59,130,246,.25),transparent 70%);position:relative}
 .login-glow::before{content:"";position:absolute;inset:0;border-radius:22px;background:linear-gradient(135deg,rgba(59,130,246,.35),rgba(34,211,238,.15));filter:blur(14px);z-index:0}
 .login-glow img{width:64px;height:64px;position:relative;z-index:1;filter:drop-shadow(0 6px 18px rgba(34,211,238,.35))}
@@ -95,7 +95,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue)}
 .login .sub{color:var(--muted);font-size:13px;margin-bottom:26px}
 .pin-field{position:relative;margin-bottom:16px}
 .pin-field svg{position:absolute;left:15px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted);pointer-events:none}
-.pin-field input{padding:14px 14px 14px 42px;font-size:19px;letter-spacing:.4em;text-align:center;background:#0a1220;border:1.5px solid var(--panel-brd)}
+.pin-field input{padding:14px 14px 14px 42px;font-size:19px;letter-spacing:.4em;text-align:center;background:#0a1220;border:1.5px solid var(--panel-brd);-webkit-text-security:disc}
 .pin-field input:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(59,130,246,.14)}
 .login-card.shake{animation:shake .4s}
 @keyframes shake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(3px)}30%,50%,70%{transform:translateX(-6px)}40%,60%{transform:translateX(6px)}}
@@ -120,7 +120,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue)}
 <div class="sub">Painel de gestão — dados reais da sua operação</div>
 <div class="pin-field">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="9.5" rx="2.2"/><path d="M7.5 10.5V7.2a4.5 4.5 0 0 1 9 0v3.3"/></svg>
-<input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="Digite seu PIN" onkeydown="if(event.key==='Enter')doUnlock()">
+<input id="pin" type="text" inputmode="numeric" autocomplete="off" name="codelar-pin-nofill" placeholder="Digite seu PIN" onkeydown="if(event.key==='Enter')doUnlock()">
 </div>
 <button class="btn full" onclick="doUnlock()">Desbloquear</button>
 <div class="hint" id="loginHint">Painel de uso pessoal — só você tem o PIN.</div>
@@ -173,6 +173,7 @@ const ICON = {
   message:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.2h16v11.3H8.3L4 20.5V5.2Z"/></svg>',
   team:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2.9"/><circle cx="16" cy="8" r="2.9"/><path d="M2.3 20c0-3.2 2.6-5.4 5.7-5.4s5.7 2.2 5.7 5.4"/><path d="M14.3 15c2.7.4 4.7 2.6 4.7 5"/></svg>',
   logout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8"/><path d="M10 12h11m0 0-3.2-3.2M21 12l-3.2 3.2"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.3 12.3 2.6 2.6 5-5.2"/></svg>',
 };
 const NAV_ITEMS = [
   {id:'home',icon:'home',label:'Dashboard'},
