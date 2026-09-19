@@ -73,6 +73,20 @@ h1,h2,h3{font-family:"Plus Jakarta Sans",sans-serif;letter-spacing:-.02em}
 .range-btn{border:0;background:transparent;color:var(--muted);padding:7px 12px;border-radius:8px;font-size:12.5px;font-weight:600}
 .range-btn.active{background:var(--grad);color:#04101f}
 .chart-total{font-size:13px;color:var(--muted)}.chart-total b{color:#fff;font-size:15px}
+.bars-chart{display:flex;align-items:flex-end;gap:8px;height:170px;padding-top:26px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+.bar-val{font-size:11px;font-weight:700;color:#dce8f5;margin-bottom:6px;white-space:nowrap}
+.bar-rect{width:100%;max-width:34px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,var(--cyan),var(--blue));min-height:3px;transition:height .5s ease}
+.bar-rect.green{background:linear-gradient(180deg,#6ee7b7,var(--green))}
+.bar-lbl{margin-top:8px;font-size:10.5px;color:var(--muted);white-space:nowrap}
+.donut-wrap{display:flex;align-items:center;gap:22px;flex-wrap:wrap;padding:6px 0 2px}
+.donut{width:132px;height:132px;border-radius:50%;flex:none;position:relative}
+.donut::after{content:"";position:absolute;inset:22px;border-radius:50%;background:var(--panel);background:#0b111d}
+.donut-legend{display:flex;flex-direction:column;gap:9px;flex:1;min-width:140px}
+.donut-legend .row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#c8d3e2}
+.donut-legend .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.donut-legend .row b{color:#fff;margin-left:auto}
+.chart-empty{color:var(--muted);font-size:12.5px;padding:20px 4px;text-align:center}
 
 .modal{position:fixed;inset:0;background:rgba(3,5,10,.75);display:grid;place-items:center;padding:18px;z-index:30}
 .modal-card{width:min(480px,100%);background:linear-gradient(180deg,#0d1420,#090e17);border:1px solid var(--panel-brd);border-radius:var(--r-lg);padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
@@ -143,10 +157,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue)}
     <div><div class="title">Faturamento</div><div class="chart-total">Total no período: <b id="chartTotal">R$ 0,00</b></div></div>
     <div class="range-group" id="rangeGroup"></div>
   </div>
-  <canvas id="revenueChart" height="90"></canvas>
+  <div id="revenueChart" class="bars-chart"></div>
 </div>
-<div class="card wide"><div class="title">Vendas por mês</div><canvas id="salesChart" height="140"></canvas></div>
-<div class="card wide"><div class="title">Tipos de site</div><canvas id="typeChart" height="140"></canvas></div>
+<div class="card wide"><div class="title">Vendas por mês</div><div id="salesChart" class="bars-chart"></div></div>
+<div class="card wide"><div class="title">Tipos de site</div><div id="typeChart" class="donut-wrap"></div></div>
 </div></section>
 
 <section id="clients" class="hidden"><div class="top"><div><h1>Clientes</h1><div class="muted">Cadastre somente clientes reais.</div></div><button class="btn" onclick="openClient()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>Cliente</button></div><div class="card"><div class="toolbar"><input id="clientSearch" placeholder="Pesquisar..." oninput="renderClients()"></div><div class="table-wrap"><table class="table"><thead><tr><th>Nome</th><th>E-mail</th><th>Tipo de site</th><th>Valor pago</th><th>Data do pedido</th><th></th></tr></thead><tbody id="clientsRows"></tbody></table></div><div id="clientsEmpty" class="empty hidden"><strong>Nenhum cliente cadastrado</strong>Use “+ Cliente” para registrar seu primeiro cliente.</div></div></section>
@@ -163,7 +177,6 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue)}
 
 <div id="modal" class="modal hidden"><div class="modal-card"><div class="modal-head"><h3 id="modalTitle">Novo</h3><button class="x" onclick="closeModal()">×</button></div><div id="modalBody"></div></div></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <script>
 const ICON = {
   home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h4v-6h2v6h4a1 1 0 0 0 1-1v-9"/></svg>',
@@ -243,27 +256,19 @@ function buildSeries(range){
   const total = data.reduce((s,v)=>s+v,0);
   return {labels,data,total};
 }
-const dataLabelPlugin = {
-  id:'dataLabel',
-  afterDatasetsDraw(chart){
-    const {ctx}=chart;
-    chart.data.datasets.forEach((ds,i)=>{
-      if(ds.hideLabels) return;
-      const meta=chart.getDatasetMeta(i);
-      meta.data.forEach((el,idx)=>{
-        const val=ds.data[idx];
-        if(!val) return;
-        const label = ds.labelFormat ? ds.labelFormat(val) : String(val);
-        ctx.save();
-        ctx.fillStyle="#dce8f5";
-        ctx.font="700 11px 'Plus Jakarta Sans', sans-serif";
-        ctx.textAlign="center";
-        ctx.fillText(label, el.x, el.y - 8);
-        ctx.restore();
-      });
-    });
-  }
-};
+function renderBars(containerId, items, colorClass, formatLabel){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  const max = Math.max(1, ...items.map(i=>i.value));
+  el.innerHTML = items.map(i=>{
+    const pct = Math.max(2, Math.round((i.value/max)*100));
+    return `<div class="bar-col">
+      <div class="bar-val">${i.value?formatLabel(i.value):""}</div>
+      <div class="bar-rect ${colorClass}" style="height:${pct}%"></div>
+      <div class="bar-lbl">${esc(i.label)}</div>
+    </div>`;
+  }).join("");
+}
 
 function renderChart(){
   const homeSection = document.getElementById("home");
@@ -272,34 +277,11 @@ function renderChart(){
   const {labels,data,total} = buildSeries(chartRange);
   const totalEl = document.getElementById("chartTotal");
   if(totalEl) totalEl.textContent = money(total);
-  const canvas = document.getElementById("revenueChart");
-  if(canvas && typeof Chart!=="undefined"){
-    const ctx = canvas.getContext("2d");
-    const grad = ctx.createLinearGradient(0,0,0,220);
-    grad.addColorStop(0,"rgba(59,130,246,.9)");
-    grad.addColorStop(1,"rgba(34,211,238,.55)");
-    if(chartInstance) chartInstance.destroy();
-    chartInstance = new Chart(canvas,{
-      type:"bar",
-      data:{ labels, datasets:[{ data, backgroundColor:grad, borderRadius:6, maxBarThickness:26, labelFormat:(v)=>v?money(v):"" }] },
-      options:{
-        layout:{ padding:{ top:22 } },
-        plugins:{ legend:{display:false}, tooltip:{ backgroundColor:"#0d1420", borderColor:"#19314d", borderWidth:1, callbacks:{ label:(c)=>money(c.raw) } } },
-        scales:{
-          x:{ grid:{display:false}, ticks:{ color:"#8695ab", font:{size:11} } },
-          y:{ grid:{ color:"rgba(255,255,255,.05)" }, ticks:{ color:"#8695ab", font:{size:11}, callback:(v)=>money(v) } }
-        }
-      },
-      plugins:[dataLabelPlugin]
-    });
-  }
+  renderBars("revenueChart", labels.map((label,i)=>({label,value:data[i]})), "", (v)=>money(v));
   renderSalesChart();
   renderTypeChart();
 }
-let salesChartInstance=null, typeChartInstance=null;
 function renderSalesChart(){
-  const canvas=document.getElementById("salesChart");
-  if(!canvas || typeof Chart==="undefined") return;
   const sales=[...clients,...history].filter(c=>c.amount_paid_cents>0);
   const now=new Date();
   const labels=[]; const keys=[]; const buckets={};
@@ -313,39 +295,29 @@ function renderSalesChart(){
     const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
     if(k in buckets) buckets[k]+=1;
   });
-  const data=keys.map(k=>buckets[k]);
-  if(salesChartInstance) salesChartInstance.destroy();
-  salesChartInstance=new Chart(canvas,{
-    type:"bar",
-    data:{ labels, datasets:[{ data, backgroundColor:"#34d399", borderRadius:6, maxBarThickness:30, labelFormat:(v)=>String(v) }] },
-    options:{
-      layout:{ padding:{ top:22 } },
-      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:"#0d1420", borderColor:"#19314d", borderWidth:1 } },
-      scales:{
-        x:{ grid:{display:false}, ticks:{ color:"#8695ab", font:{size:11} } },
-        y:{ grid:{ color:"rgba(255,255,255,.05)" }, ticks:{ color:"#8695ab", font:{size:11}, stepSize:1, precision:0 } }
-      }
-    },
-    plugins:[dataLabelPlugin]
-  });
+  renderBars("salesChart", keys.map((k,i)=>({label:labels[i],value:buckets[k]})), "green", (v)=>String(v));
 }
+const DONUT_PALETTE=["#3b82f6","#22d3ee","#a78bfa","#34d399","#fbbf24","#f87171","#f472b6"];
 function renderTypeChart(){
-  const canvas=document.getElementById("typeChart");
-  if(!canvas || typeof Chart==="undefined") return;
+  const el=document.getElementById("typeChart");
+  if(!el) return;
   const all=[...clients,...history];
   const counts={};
   all.forEach(c=>{ const t=(c.site_type||"Não informado").trim()||"Não informado"; counts[t]=(counts[t]||0)+1; });
-  const labels=Object.keys(counts); const data=Object.values(counts);
-  const palette=["#3b82f6","#22d3ee","#a78bfa","#34d399","#fbbf24","#f87171","#f472b6"];
-  if(typeChartInstance) typeChartInstance.destroy();
-  typeChartInstance=new Chart(canvas,{
-    type:"doughnut",
-    data:{ labels, datasets:[{ data, backgroundColor:labels.map((_,i)=>palette[i%palette.length]), borderColor:"#0b111d", borderWidth:3 }] },
-    options:{
-      plugins:{ legend:{ position:"bottom", labels:{ color:"#c8d3e2", font:{size:11.5}, boxWidth:11, padding:14 } }, tooltip:{ backgroundColor:"#0d1420", borderColor:"#19314d", borderWidth:1 } },
-      cutout:"62%"
-    }
-  });
+  const entries=Object.entries(counts);
+  if(!entries.length){ el.innerHTML=`<div class="chart-empty">Sem pedidos cadastrados ainda.</div>`; return; }
+  const total=entries.reduce((s,[,v])=>s+v,0);
+  let acc=0;
+  const stops=entries.map(([label,v],i)=>{
+    const start=(acc/total)*360; acc+=v; const end=(acc/total)*360;
+    return `${DONUT_PALETTE[i%DONUT_PALETTE.length]} ${start}deg ${end}deg`;
+  }).join(",");
+  el.innerHTML = `
+    <div class="donut" style="background:conic-gradient(${stops})"></div>
+    <div class="donut-legend">${entries.map(([label,v],i)=>`
+      <div class="row"><span class="dot" style="background:${DONUT_PALETTE[i%DONUT_PALETTE.length]}"></span>${esc(label)}<b>${v}</b></div>
+    `).join("")}</div>
+  `;
 }
 
 let clients=[],messages=[],history=[];
