@@ -58,6 +58,7 @@ async function setup() {
   }
   await addColIfMissing("client_date", "client_date TEXT");
   await addColIfMissing("site_type", "site_type TEXT");
+  await addColIfMissing("site_category", "site_category TEXT");
   await addColIfMissing("site_specs", "site_specs TEXT");
   await addColIfMissing("amount_paid_cents", "amount_paid_cents INTEGER NOT NULL DEFAULT 0");
   await addColIfMissing("finished", "finished INTEGER NOT NULL DEFAULT 0");
@@ -127,11 +128,11 @@ app.get("/api/clients/history", auth, async (req, res) => {
   res.json(r.rows);
 });
 app.post("/api/clients", auth, async (req, res) => {
-  const { name, email = "", phone = "", client_date = null, site_type = "", site_specs = "", amount_paid_cents = 0 } = req.body || {};
+  const { name, email = "", phone = "", client_date = null, site_type = "", site_category = "", site_specs = "", amount_paid_cents = 0 } = req.body || {};
   if (!name) return res.status(400).json({ error: "Nome é obrigatório" });
   const r = await db.execute({
-    sql: `INSERT INTO clients(name,email,phone,client_date,site_type,site_specs,amount_paid_cents) VALUES(?,?,?,?,?,?,?)`,
-    args: [name, email, phone, client_date, site_type, site_specs, Number(amount_paid_cents) || 0],
+    sql: `INSERT INTO clients(name,email,phone,client_date,site_type,site_category,site_specs,amount_paid_cents) VALUES(?,?,?,?,?,?,?,?)`,
+    args: [name, email, phone, client_date, site_type, site_category, site_specs, Number(amount_paid_cents) || 0],
   });
   res.json({ id: Number(r.lastInsertRowid) });
 });
