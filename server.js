@@ -150,22 +150,6 @@ app.delete("/api/clients/:id", auth, async (req, res) => {
   res.json({ ok: true });
 });
 
-app.get("/api/messages", auth, async (req, res) => {
-  const r = await db.execute(
-    `SELECT m.*, c.name client_name FROM messages m LEFT JOIN clients c ON c.id=m.client_id ORDER BY m.created_at DESC LIMIT 200`
-  );
-  res.json(r.rows);
-});
-app.post("/api/messages", auth, async (req, res) => {
-  const { client_id, body } = req.body || {};
-  if (!body) return res.status(400).json({ error: "Mensagem vazia" });
-  const r = await db.execute({
-    sql: "INSERT INTO messages(client_id,direction,body) VALUES(?,?,?)",
-    args: [client_id || null, "outbound", body],
-  });
-  res.json({ id: Number(r.lastInsertRowid) });
-});
-
 function normalizeText(s) {
   return (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
@@ -207,6 +191,8 @@ app.get("/api/prospect", auth, async (req, res) => {
   const query = (req.query.query || "").trim();
   const state = (req.query.state || "").trim();
   const city = (req.query.city || "").trim();
+  const siteFilter = (req.query.siteFilter || "any").trim(); // any | with | without
+  const waFilter = (req.query.waFilter || "any").trim(); // any | confirmed | phoneOnly
   if (!query) return res.status(400).json({ error: "Informe o tipo de negócio que você quer buscar" });
   const key = process.env.LOCATIONIQ_API_KEY;
   if (!key) {
@@ -219,7 +205,7 @@ app.get("/api/prospect", auth, async (req, res) => {
   try {
     let rawResults = [];
 
-    if (tag) {
+    if (tag && (city || state)) {
       // 1) acha um ponto central pra região pedida
       const geoUrl = new URL("https://us1.locationiq.com/v1/search");
       geoUrl.searchParams.set("key", key);
@@ -274,7 +260,8 @@ app.get("/api/prospect", auth, async (req, res) => {
     for (const item of rawResults.slice(0, 18)) {
       let phone = item.extratags?.phone || item.extratags?.["contact:phone"] || null;
       let website = item.extratags?.website || item.extratags?.["contact:website"] || null;
-      if (!phone && !website && item.lat && item.lon) {
+      let waTag = item.extratags?.whatsapp || item.extratags?.["contact:whatsapp"] || null;
+      if (!phone && !website && !waTag && item.lat && item.lon) {
         try {
           const revUrl = new URL("https://us1.locationiq.com/v1/reverse");
           revUrl.searchParams.set("key", key);
@@ -287,6 +274,7 @@ app.get("/api/prospect", auth, async (req, res) => {
             const revData = await revR.json();
             phone = revData.extratags?.phone || revData.extratags?.["contact:phone"] || null;
             website = revData.extratags?.website || revData.extratags?.["contact:website"] || null;
+            waTag = revData.extratags?.whatsapp || revData.extratags?.["contact:whatsapp"] || null;
           }
         } catch (e) {
           /* segue sem contato pra esse item */
@@ -298,12 +286,18 @@ app.get("/api/prospect", auth, async (req, res) => {
         address: item.display_name,
         phone,
         website,
-        whatsapp: phoneToWhatsapp(phone),
+        whatsapp: phoneToWhatsapp(phone || waTag),
+        whatsappConfirmed: Boolean(waTag),
       });
     }
 
-    const withPhone = enriched.filter((r) => r.whatsapp).slice(0, 10);
-    res.json({ results: withPhone });
+    let filtered = enriched.filter((r) => r.whatsapp);
+    if (siteFilter === "with") filtered = filtered.filter((r) => r.website);
+    if (siteFilter === "without") filtered = filtered.filter((r) => !r.website);
+    if (waFilter === "confirmed") filtered = filtered.filter((r) => r.whatsappConfirmed);
+    if (waFilter === "phoneOnly") filtered = filtered.filter((r) => !r.whatsappConfirmed);
+
+    res.json({ results: filtered.slice(0, 10) });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: `Não foi possível buscar agora: ${e.message}` });
