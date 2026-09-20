@@ -179,6 +179,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue)}
     <div class="field"><label>Estado (opcional)</label><input id="pqState" placeholder="Ex: SP, CE, RJ"></div>
     <div class="field"><label>Cidade (opcional)</label><input id="pqCity" placeholder="Ex: Fortaleza"></div>
   </div>
+  <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">
+    <div class="field"><label>WhatsApp</label><select id="pqWa"><option value="any">Sem filtro (ambos)</option><option value="confirmed">Só WhatsApp confirmado</option><option value="phoneOnly">Só telefone comum</option></select></div>
+    <div class="field"><label>Site/app</label><select id="pqSite"><option value="any">Sem filtro (ambos)</option><option value="without">Só sem site</option><option value="with">Só com site</option></select></div>
+  </div>
   <button class="btn full" onclick="doProspect()" id="pqBtn">Buscar</button>
 </div>
 <div id="prospectResults"></div>
@@ -186,7 +190,6 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue)}
 
 <section id="history" class="hidden"><div class="top"><div><h1>Histórico</h1><div class="muted">Pedidos finalizados.</div></div></div><div class="card"><div class="table-wrap"><table class="table stack"><thead><tr><th>Nome</th><th>E-mail</th><th>Pacote</th><th>Tipo de site</th><th>Especificações</th><th>Valor pago</th><th>Finalizado em</th><th></th></tr></thead><tbody id="historyRows"></tbody></table></div><div id="historyEmpty" class="empty hidden"><strong>Nenhum pedido finalizado ainda</strong>Quando você clicar em “Pedido finalizado” em um cliente, ele aparece aqui.</div></div></section>
 
-<section id="messages" class="hidden"><div class="top"><div><h1>Mensagens</h1><div class="muted">Histórico de conversas com clientes.</div></div></div><div class="card"><div class="table-wrap" id="messagesList"></div><div id="messagesEmpty" class="empty hidden"><strong>Nenhuma mensagem ainda</strong>Registre conversas com clientes aqui conforme for atendendo.</div></div></section>
 
 <section id="team" class="hidden"><div class="top"><div><h1>Equipe</h1><div class="muted">Funcionários e permissões.</div></div></div><div class="card"><div class="empty"><strong>Somente o administrador foi criado</strong>Adicione funcionários pelo backend e defina permissões antes de colocar o sistema em produção.</div></div></section>
 </main>
@@ -213,7 +216,6 @@ const NAV_ITEMS = [
   {id:'prospect',icon:'search',label:'Buscar'},
   {id:'clients',icon:'users',label:'Clientes'},
   {id:'history',icon:'check',label:'Histórico'},
-  {id:'messages',icon:'message',label:'Mensagens'},
   {id:'team',icon:'team',label:'Equipe'},
 ];
 function buildNav(){
@@ -348,7 +350,7 @@ function renderTypeChart(){
   `;
 }
 
-let clients=[],messages=[],history=[];
+let clients=[],history=[];
 const $=id=>document.getElementById(id);
 const money=c=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format((c||0)/100);
 async function api(path,opt={}){opt.headers={...(opt.headers||{}),"Content-Type":"application/json","x-codelar-token":sessionStorage.getItem("codelarToken")||""};const r=await fetch(path,opt);if(!r.ok)throw new Error((await r.json()).error||"Erro");return r.json()}
@@ -370,12 +372,11 @@ async function doUnlock(){
   }
 }
 function logout(){sessionStorage.removeItem("codelarToken");$("app").classList.add("hidden");$("login").classList.remove("hidden")}
-function go(id){document.querySelectorAll("main section").forEach(s=>s.classList.add("hidden"));$(id).classList.remove("hidden");document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.nav===id));if(id==="clients")renderClients();if(id==="messages")renderMessages();if(id==="history")renderHistory();if(id==="home")renderChart()}
+function go(id){document.querySelectorAll("main section").forEach(s=>s.classList.add("hidden"));$(id).classList.remove("hidden");document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.nav===id));if(id==="clients")renderClients();if(id==="history")renderHistory();if(id==="home")renderChart()}
 async function start(){ $("app").classList.remove("hidden");await refresh()}
-async function refresh(){try{const d=await api("/api/dashboard");$("mFinished").textContent=d.finished;$("mReceived").textContent=money(d.totalReceived);$("mMonth").textContent=money(d.monthReceived);$("mSalesMonth").textContent=d.salesMonth;clients=await api("/api/clients");messages=await api("/api/messages");history=await api("/api/clients/history");renderClients();renderMessages();renderHistory();renderChart()}catch(e){if(e.message.includes("autenticado"))logout()}}
+async function refresh(){try{const d=await api("/api/dashboard");$("mFinished").textContent=d.finished;$("mReceived").textContent=money(d.totalReceived);$("mMonth").textContent=money(d.monthReceived);$("mSalesMonth").textContent=d.salesMonth;clients=await api("/api/clients");history=await api("/api/clients/history");renderClients();renderHistory();renderChart()}catch(e){if(e.message.includes("autenticado"))logout()}}
 function renderClients(){let q=($("clientSearch")?.value||"").toLowerCase();let a=clients.filter(c=>(c.name+" "+(c.email||"")).toLowerCase().includes(q));$("clientsRows").innerHTML=a.map(c=>`<tr><td data-label="Nome"><b>${esc(c.name)}</b></td><td data-label="E-mail">${esc(c.email||"—")}</td><td data-label="Pacote">${esc(c.site_type||"—")}</td><td data-label="Tipo de site">${esc(c.site_category||"—")}</td><td data-label="Valor pago">${money(c.amount_paid_cents)}</td><td data-label="Data do pedido">${c.client_date?new Date(c.client_date).toLocaleDateString("pt-BR"):new Date(c.created_at).toLocaleDateString("pt-BR")}</td><td><button class="btn" style="padding:7px 12px;font-size:12px" onclick="finishClient(${c.id})">Pedido finalizado</button></td></tr>`).join("");$("clientsEmpty").classList.toggle("hidden",a.length>0)}
 function renderHistory(){$("historyRows").innerHTML=history.map(c=>`<tr><td data-label="Nome"><b>${esc(c.name)}</b></td><td data-label="E-mail">${esc(c.email||"—")}</td><td data-label="Pacote">${esc(c.site_type||"—")}</td><td data-label="Tipo de site">${esc(c.site_category||"—")}</td><td data-label="Especificações" style="max-width:260px;white-space:pre-wrap">${esc(c.site_specs||"—")}</td><td data-label="Valor pago">${money(c.amount_paid_cents)}</td><td data-label="Finalizado em">${c.finished_at?new Date(c.finished_at).toLocaleDateString("pt-BR"):"—"}</td><td style="display:flex;gap:6px"><button class="btn" style="padding:7px 12px;font-size:12px;background:transparent;border:1px solid var(--panel-brd);color:var(--muted)" onclick="reopenClient(${c.id})">Reabrir</button><button class="btn" style="padding:7px 12px;font-size:12px;background:transparent;border:1px solid rgba(248,113,113,.35);color:var(--red)" onclick="cancelClient(${c.id})">Anular</button></td></tr>`).join("");$("historyEmpty").classList.toggle("hidden",history.length>0)}
-function renderMessages(){if(!messages.length){$("messagesList").innerHTML="";$("messagesEmpty").classList.remove("hidden");return}$("messagesEmpty").classList.add("hidden");$("messagesList").innerHTML=messages.map(m=>`<div style="padding:12px 4px;border-bottom:1px solid #152a42"><div style="display:flex;justify-content:space-between;gap:10px"><b>${esc(m.client_name||"Contato desconhecido")}</b><span class="muted" style="font-size:12px">${new Date(m.created_at).toLocaleString("pt-BR")}</span></div><div class="muted" style="font-size:12px;margin:2px 0 4px">${m.direction==="inbound"?"Recebida":"Enviada"}</div><div>${esc(m.body)}</div></div>`).join("")}
 const PACKAGES = [
   {label:"Essencial — R$ 350 (até 3 páginas)", price:350},
   {label:"Profissional — R$ 600 (até 6 páginas)", price:600},
@@ -391,7 +392,7 @@ async function doProspect(){
   const btn=$("pqBtn"); btn.disabled=true; btn.textContent="Buscando...";
   $("prospectResults").innerHTML=`<div class="chart-empty">Buscando e conferindo telefones — pode levar alguns segundos...</div>`;
   try{
-    const params=new URLSearchParams({query, state:$("pqState").value.trim(), city:$("pqCity").value.trim()});
+    const params=new URLSearchParams({query, state:$("pqState").value.trim(), city:$("pqCity").value.trim(), waFilter:$("pqWa").value, siteFilter:$("pqSite").value});
     const d=await api(`/api/prospect?${params.toString()}`);
     renderProspectResults(d.results||[]);
   }catch(e){
@@ -401,7 +402,7 @@ async function doProspect(){
   }
 }
 function renderProspectResults(results){
-  if(!results.length){ $("prospectResults").innerHTML=`<div class="card" style="margin-top:12px"><div class="chart-empty">Nenhuma empresa com telefone encontrada pra esse termo/região — tenta um termo ou cidade diferente.</div></div>`; return; }
+  if(!results.length){ $("prospectResults").innerHTML=`<div class="card" style="margin-top:12px"><div class="chart-empty">Nenhuma empresa encontrada com esses filtros — tenta afrouxar o filtro ou mudar o termo/região.</div></div>`; return; }
   $("prospectResults").innerHTML = results.map(r=>`
     <div class="card" style="margin-top:12px">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
@@ -409,7 +410,10 @@ function renderProspectResults(results){
           <div style="font-weight:700;font-size:14.5px">${esc(r.name)}</div>
           <div class="muted" style="font-size:12.5px;margin-top:3px">${esc(r.address)}</div>
         </div>
-        <span class="pill ${r.website?'':'ok'}" style="flex:none">${r.website?"Já tem site":"Sem site"}</span>
+        <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex:none">
+          <span class="pill ${r.website?'':'ok'}">${r.website?"Já tem site":"Sem site"}</span>
+          <span class="pill ${r.whatsappConfirmed?'ok':''}" style="font-size:11px">${r.whatsappConfirmed?"WhatsApp confirmado":"Só telefone"}</span>
+        </div>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;align-items:center">
         ${r.website?`<a href="${esc(r.website)}" target="_blank" style="color:#7cb0ff;font-size:12.5px">${esc(r.website)}</a>`:""}
