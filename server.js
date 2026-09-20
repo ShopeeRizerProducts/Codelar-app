@@ -166,6 +166,42 @@ app.post("/api/messages", auth, async (req, res) => {
   res.json({ id: Number(r.lastInsertRowid) });
 });
 
+// Prospecção: busca empresas via OpenStreetMap/Nominatim (gratuito, sem chave de API).
+// "Sem site" é um indício, não garantia — depende do que está cadastrado publicamente no mapa.
+app.get("/api/prospect", auth, async (req, res) => {
+  const query = (req.query.query || "").trim();
+  const state = (req.query.state || "").trim();
+  const city = (req.query.city || "").trim();
+  if (!query) return res.status(400).json({ error: "Informe o tipo de negócio que você quer buscar" });
+
+  const locationParts = [city, state, "Brasil"].filter(Boolean).join(", ");
+  const q = locationParts ? `${query} em ${locationParts}` : `${query}, Brasil`;
+
+  try {
+    const url = new URL("https://nominatim.openstreetmap.org/search");
+    url.searchParams.set("q", q);
+    url.searchParams.set("format", "jsonv2");
+    url.searchParams.set("addressdetails", "1");
+    url.searchParams.set("extratags", "1");
+    url.searchParams.set("limit", "10");
+    const r = await fetch(url, {
+      headers: { "User-Agent": "CodelarOS/1.0 (uso pessoal - prospeccao de clientes)" },
+    });
+    if (!r.ok) throw new Error("Falha na busca");
+    const data = await r.json();
+    const results = data.slice(0, 10).map((item) => ({
+      name: item.display_name.split(",")[0],
+      address: item.display_name,
+      phone: item.extratags?.phone || item.extratags?.["contact:phone"] || null,
+      website: item.extratags?.website || item.extratags?.["contact:website"] || null,
+    }));
+    res.json({ results });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Não foi possível buscar agora. Tenta de novo em alguns segundos." });
+  }
+});
+
 app.get("/*splat", (req, res) => res.sendFile(process.cwd() + "/public/index.html"));
 
 setup()
