@@ -4,7 +4,7 @@ import { createClient } from "@libsql/client";
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
-import makeWASocket, { DisconnectReason, useMultiFileAuthState } from "@whiskeysockets/baileys";
+import makeWASocket, { Browsers, DisconnectReason, useMultiFileAuthState } from "@whiskeysockets/baileys";
 
 dotenv.config();
 const app = express();
@@ -104,8 +104,12 @@ async function startWhatsApp() {
     waState.status = state.creds.registered ? "connecting" : "disconnected";
     const sock = makeWASocket({
       auth: state,
+      // Use a canonical browser identity. Non-canonical/custom labels can make
+      // WhatsApp reject the pairing request even when a code is returned.
+      browser: Browsers.windows("Chrome"),
       printQRInTerminal: false,
       markOnlineOnConnect: false,
+      syncFullHistory: false,
     });
     waSock = sock;
     sock.ev.on("creds.update", saveCreds);
@@ -140,6 +144,26 @@ app.get("/api/whatsapp/status", auth, async (req, res) => {
   }
 });
 
+function waitForWhatsAppReady(sock, timeoutMs = 12000) {
+  if (sock?.ws?.readyState === 1) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const finish = (err) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      if (typeof sock?.ev?.off === "function") sock.ev.off("connection.update", onUpdate);
+      if (err) reject(err); else resolve();
+    };
+    const onUpdate = ({ connection, qr }) => {
+      if (qr || connection === "connecting" || connection === "open") finish();
+      else if (connection === "close") finish(new Error("A conexão do WhatsApp foi encerrada antes do pareamento."));
+    };
+    const timer = setTimeout(() => finish(), timeoutMs);
+    sock.ev.on("connection.update", onUpdate);
+  });
+}
+
 app.post("/api/whatsapp/pairing-code", auth, async (req, res) => {
   try {
     const phone = waDigits(req.body?.phone);
@@ -151,11 +175,19 @@ app.post("/api/whatsapp/pairing-code", auth, async (req, res) => {
     if (sock.authState?.creds?.registered) {
       return res.status(409).json({ error: "Já existe uma sessão salva. Aguarde a conexão ou desconecte para vincular outro número.", ...waState });
     }
+    // WhatsApp must have the socket ready before the pairing request is sent.
+    // We wait for the first connection update (or a short timeout) instead of
+    // firing requestPairingCode immediately, which can produce an invalid/dead
+    // code on some WhatsApp/Baileys versions.
+    await waitForWhatsAppReady(sock, 12000);
     const code = await sock.requestPairingCode(phone);
+    if (!code || String(code).length !== 8) {
+      throw new Error("O WhatsApp não devolveu um código de pareamento válido.");
+    }
     waState.phone = phone;
-    waState.pairingCode = code;
+    waState.pairingCode = String(code);
     waState.status = "pairing";
-    res.json({ code, phone, status: waState.status });
+    res.json({ code: String(code), phone, status: waState.status });
   } catch (e) {
     console.error("WhatsApp pairing error:", e);
     waState.lastError = String(e?.message || e);
