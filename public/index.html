@@ -172,7 +172,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue)}
 <div class="card wide"><div class="title">Tipos de site</div><div id="typeChart" class="donut-wrap"></div></div>
 </div></section>
 
-<section id="prospect" class="hidden"><div class="top"><div><h1>Buscar empresas</h1><div class="muted">Encontre negócios locais que podem precisar de site ou app. Até 10 resultados por busca.</div></div></div>
+<section id="prospect" class="hidden"><div class="top"><div><h1>Buscar empresas</h1><div class="muted">Negócios locais com telefone encontrado, prontos pra chamar no WhatsApp. Até 10 por busca.</div></div></div>
 <div class="card">
   <div class="field"><label>Tipo de negócio</label><input id="pqQuery" placeholder="Ex: padaria, clínica odontológica, academia"></div>
   <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">
@@ -389,7 +389,7 @@ async function doProspect(){
   const query=$("pqQuery").value.trim();
   if(!query){ alert("Digita o tipo de negócio que você quer buscar."); return; }
   const btn=$("pqBtn"); btn.disabled=true; btn.textContent="Buscando...";
-  $("prospectResults").innerHTML=`<div class="chart-empty">Buscando empresas...</div>`;
+  $("prospectResults").innerHTML=`<div class="chart-empty">Buscando e conferindo telefones — pode levar alguns segundos...</div>`;
   try{
     const params=new URLSearchParams({query, state:$("pqState").value.trim(), city:$("pqCity").value.trim()});
     const d=await api(`/api/prospect?${params.toString()}`);
@@ -401,7 +401,7 @@ async function doProspect(){
   }
 }
 function renderProspectResults(results){
-  if(!results.length){ $("prospectResults").innerHTML=`<div class="card"><div class="chart-empty">Nenhuma empresa encontrada — tenta um termo ou cidade diferente.</div></div>`; return; }
+  if(!results.length){ $("prospectResults").innerHTML=`<div class="card" style="margin-top:12px"><div class="chart-empty">Nenhuma empresa com telefone encontrada pra esse termo/região — tenta um termo ou cidade diferente.</div></div>`; return; }
   $("prospectResults").innerHTML = results.map(r=>`
     <div class="card" style="margin-top:12px">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
@@ -411,9 +411,12 @@ function renderProspectResults(results){
         </div>
         <span class="pill ${r.website?'':'ok'}" style="flex:none">${r.website?"Já tem site":"Sem site"}</span>
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;font-size:12.5px">
-        ${r.phone?`<span class="muted">📞 ${esc(r.phone)}</span>`:""}
-        ${r.website?`<a href="${esc(r.website)}" target="_blank" style="color:#7cb0ff">${esc(r.website)}</a>`:""}
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;align-items:center">
+        ${r.website?`<a href="${esc(r.website)}" target="_blank" style="color:#7cb0ff;font-size:12.5px">${esc(r.website)}</a>`:""}
+        <a href="https://wa.me/${r.whatsapp}" target="_blank" class="btn" style="padding:9px 14px;font-size:12.5px;background:linear-gradient(180deg,#25d366,#1da851);margin-left:auto">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2zm0 18.2a8.1 8.1 0 0 1-4.2-1.2l-.3-.2-3.1.8.8-3-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1s-.7.8-.9 1c-.2.2-.3.2-.6.1a6.7 6.7 0 0 1-2-1.2 7.4 7.4 0 0 1-1.4-1.7c-.1-.2 0-.4.1-.5s.2-.3.4-.4a1.6 1.6 0 0 0 .2-.4.4.4 0 0 0 0-.4c-.1-.1-.6-1.4-.8-1.9s-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 2.9 2.9 0 0 0-.9 2.2 5.1 5.1 0 0 0 1.1 2.7 11.6 11.6 0 0 0 4.5 4c.6.3 1.1.4 1.5.6a3.6 3.6 0 0 0 1.6.1 2.7 2.7 0 0 0 1.8-1.2 2.1 2.1 0 0 0 .1-1.2c-.1-.1-.2-.2-.4-.3z"/></svg>
+          Chamar no WhatsApp
+        </a>
       </div>
     </div>
   `).join("");
