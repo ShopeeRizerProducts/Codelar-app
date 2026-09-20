@@ -172,7 +172,17 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue)}
 <div class="card wide"><div class="title">Tipos de site</div><div id="typeChart" class="donut-wrap"></div></div>
 </div></section>
 
-<section id="clients" class="hidden"><div class="top"><div><h1>Clientes</h1><div class="muted">Cadastre somente clientes reais.</div></div><button class="btn" onclick="openClient()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>Cliente</button></div><div class="card"><div class="toolbar"><input id="clientSearch" placeholder="Pesquisar..." oninput="renderClients()"></div><div class="table-wrap"><table class="table stack"><thead><tr><th>Nome</th><th>E-mail</th><th>Pacote</th><th>Tipo de site</th><th>Valor pago</th><th>Data do pedido</th><th></th></tr></thead><tbody id="clientsRows"></tbody></table></div><div id="clientsEmpty" class="empty hidden"><strong>Nenhum cliente cadastrado</strong>Use “+ Cliente” para registrar seu primeiro cliente.</div></div></section>
+<section id="prospect" class="hidden"><div class="top"><div><h1>Buscar empresas</h1><div class="muted">Encontre negócios locais que podem precisar de site ou app. Até 10 resultados por busca.</div></div></div>
+<div class="card">
+  <div class="field"><label>Tipo de negócio</label><input id="pqQuery" placeholder="Ex: padaria, clínica odontológica, academia"></div>
+  <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">
+    <div class="field"><label>Estado (opcional)</label><input id="pqState" placeholder="Ex: SP, CE, RJ"></div>
+    <div class="field"><label>Cidade (opcional)</label><input id="pqCity" placeholder="Ex: Fortaleza"></div>
+  </div>
+  <button class="btn full" onclick="doProspect()" id="pqBtn">Buscar</button>
+</div>
+<div id="prospectResults"></div>
+</section><section id="clients" class="hidden"><div class="top"><div><h1>Clientes</h1><div class="muted">Cadastre somente clientes reais.</div></div><button class="btn" onclick="openClient()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>Cliente</button></div><div class="card"><div class="toolbar"><input id="clientSearch" placeholder="Pesquisar..." oninput="renderClients()"></div><div class="table-wrap"><table class="table stack"><thead><tr><th>Nome</th><th>E-mail</th><th>Pacote</th><th>Tipo de site</th><th>Valor pago</th><th>Data do pedido</th><th></th></tr></thead><tbody id="clientsRows"></tbody></table></div><div id="clientsEmpty" class="empty hidden"><strong>Nenhum cliente cadastrado</strong>Use “+ Cliente” para registrar seu primeiro cliente.</div></div></section>
 
 <section id="history" class="hidden"><div class="top"><div><h1>Histórico</h1><div class="muted">Pedidos finalizados.</div></div></div><div class="card"><div class="table-wrap"><table class="table stack"><thead><tr><th>Nome</th><th>E-mail</th><th>Pacote</th><th>Tipo de site</th><th>Especificações</th><th>Valor pago</th><th>Finalizado em</th><th></th></tr></thead><tbody id="historyRows"></tbody></table></div><div id="historyEmpty" class="empty hidden"><strong>Nenhum pedido finalizado ainda</strong>Quando você clicar em “Pedido finalizado” em um cliente, ele aparece aqui.</div></div></section>
 
@@ -196,9 +206,11 @@ const ICON = {
   team:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2.9"/><circle cx="16" cy="8" r="2.9"/><path d="M2.3 20c0-3.2 2.6-5.4 5.7-5.4s5.7 2.2 5.7 5.4"/><path d="M14.3 15c2.7.4 4.7 2.6 4.7 5"/></svg>',
   logout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8"/><path d="M10 12h11m0 0-3.2-3.2M21 12l-3.2 3.2"/></svg>',
   check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.3 12.3 2.6 2.6 5-5.2"/></svg>',
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.6-4.6"/></svg>',
 };
 const NAV_ITEMS = [
   {id:'home',icon:'home',label:'Dashboard'},
+  {id:'prospect',icon:'search',label:'Buscar'},
   {id:'clients',icon:'users',label:'Clientes'},
   {id:'history',icon:'check',label:'Histórico'},
   {id:'messages',icon:'message',label:'Mensagens'},
@@ -373,6 +385,39 @@ const PACKAGES = [
 ];
 function openClient(){ $("modalTitle").textContent="Novo cliente";$("modalBody").innerHTML=`<div class="field"><label>Nome</label><input id="mn"></div><div class="field"><label>E-mail</label><input id="me" type="email"></div><div class="field"><label>Data do pedido</label><input id="mdate" type="date" value="${new Date().toISOString().slice(0,10)}"></div><div class="field"><label>Pacote</label><select id="mtype" onchange="onPackageChange()">${PACKAGES.map(p=>`<option value="${esc(p.label)}" data-price="${p.price}">${esc(p.label)}</option>`).join("")}</select></div><div class="field"><label>Tipo de site</label><input id="mcategory" placeholder="Ex: Institucional, E-commerce, Blog"></div><div class="field"><label>Especificações do site</label><textarea id="mspecs" placeholder="Funcionalidades, referências, observações..."></textarea></div><div class="field"><label>Valor pago (R$)</label><input id="mpaid" type="number" step="0.01" min="0" value="${PACKAGES[0].price}"><div class="hint" style="text-align:left;margin-top:6px">Vem preenchido com o preço do pacote — edite se tiver adicional ou desconto.</div></div><button class="btn full" onclick="saveClient()">Salvar cliente</button>`;$("modal").classList.remove("hidden")}
 function onPackageChange(){const opt=$("mtype").selectedOptions[0];$("mpaid").value=opt.dataset.price;}
+async function doProspect(){
+  const query=$("pqQuery").value.trim();
+  if(!query){ alert("Digita o tipo de negócio que você quer buscar."); return; }
+  const btn=$("pqBtn"); btn.disabled=true; btn.textContent="Buscando...";
+  $("prospectResults").innerHTML=`<div class="chart-empty">Buscando empresas...</div>`;
+  try{
+    const params=new URLSearchParams({query, state:$("pqState").value.trim(), city:$("pqCity").value.trim()});
+    const d=await api(`/api/prospect?${params.toString()}`);
+    renderProspectResults(d.results||[]);
+  }catch(e){
+    $("prospectResults").innerHTML=`<div class="chart-empty">${esc(e.message)}</div>`;
+  }finally{
+    btn.disabled=false; btn.textContent="Buscar";
+  }
+}
+function renderProspectResults(results){
+  if(!results.length){ $("prospectResults").innerHTML=`<div class="card"><div class="chart-empty">Nenhuma empresa encontrada — tenta um termo ou cidade diferente.</div></div>`; return; }
+  $("prospectResults").innerHTML = results.map(r=>`
+    <div class="card" style="margin-top:12px">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+        <div style="min-width:0">
+          <div style="font-weight:700;font-size:14.5px">${esc(r.name)}</div>
+          <div class="muted" style="font-size:12.5px;margin-top:3px">${esc(r.address)}</div>
+        </div>
+        <span class="pill ${r.website?'':'ok'}" style="flex:none">${r.website?"Já tem site":"Sem site"}</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;font-size:12.5px">
+        ${r.phone?`<span class="muted">📞 ${esc(r.phone)}</span>`:""}
+        ${r.website?`<a href="${esc(r.website)}" target="_blank" style="color:#7cb0ff">${esc(r.website)}</a>`:""}
+      </div>
+    </div>
+  `).join("");
+}
 async function saveClient(){try{await api("/api/clients",{method:"POST",body:JSON.stringify({name:$("mn").value,email:$("me").value,client_date:$("mdate").value||null,site_type:$("mtype").value,site_category:$("mcategory").value,site_specs:$("mspecs").value,amount_paid_cents:Math.round(Number($("mpaid").value||0)*100)})});closeModal();await refresh();go("clients")}catch(e){alert(e.message)}}
 async function finishClient(id){if(!confirm("Marcar esse pedido como finalizado? Ele vai para o Histórico.")) return;try{await api(`/api/clients/${id}/finish`,{method:"PUT",body:JSON.stringify({finished:1})});await refresh();go("clients")}catch(e){alert(e.message)}}
 async function reopenClient(id){try{await api(`/api/clients/${id}/finish`,{method:"PUT",body:JSON.stringify({finished:0})});await refresh();go("history")}catch(e){alert(e.message)}}
