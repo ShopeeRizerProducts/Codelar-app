@@ -134,6 +134,20 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue)}
  .table.stack td:last-child:not(:has(button)){display:none}
  .table.stack td button{margin-left:auto}
 }
+
+.bot-layout{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
+.bot-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.bot-stat{padding:14px;border:1px solid var(--panel-brd);border-radius:14px;background:rgba(255,255,255,.025)}
+.bot-stat .n{font-size:20px;font-weight:800;margin-top:3px}.bot-stat .l{font-size:11px;color:var(--muted);text-transform:uppercase}
+.bot-switch{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.switch{position:relative;width:44px;height:24px}.switch input{display:none}.slider{position:absolute;inset:0;background:#202b3d;border-radius:99px;cursor:pointer}.slider:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}.switch input:checked+.slider{background:var(--blue)}.switch input:checked+.slider:before{transform:translateX(20px)}
+.qr-box{width:190px;height:190px;border-radius:16px;background:#fff;display:grid;place-items:center;margin:10px auto 16px;color:#111;overflow:hidden}
+.qr-box .fakeqr{width:155px;height:155px;background:repeating-conic-gradient(#111 0 6deg,#fff 6deg 12deg);position:relative}.qr-box .fakeqr:before,.qr-box .fakeqr:after{content:"";position:absolute;width:38px;height:38px;background:#fff;border:8px solid #111}.qr-box .fakeqr:before{left:5px;top:5px}.qr-box .fakeqr:after{right:5px;bottom:5px}
+.bot-status{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700}.dot-live{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 12px rgba(52,211,153,.65)}
+.bot-tabs{display:flex;gap:6px;overflow:auto;margin-bottom:14px}.bot-tab{border:1px solid var(--panel-brd);background:transparent;color:var(--muted);padding:9px 12px;border-radius:10px;white-space:nowrap;font-weight:600}.bot-tab.active{background:rgba(59,130,246,.14);color:#fff;border-color:rgba(59,130,246,.35)}
+.log-list{max-height:270px;overflow:auto}.log-row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px}.log-row b{font-weight:650}.log-ok{color:var(--green)}.log-warn{color:var(--orange)}.log-bad{color:var(--red)}
+@media(max-width:1050px){.bot-layout{grid-template-columns:1fr}.bot-stat-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.bot-stat-grid{grid-template-columns:1fr 1fr}.bot-stat .n{font-size:17px}}
 </style>
 </head>
 <body>
@@ -191,6 +205,71 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue)}
 <section id="history" class="hidden"><div class="top"><div><h1>Histórico</h1><div class="muted">Pedidos finalizados.</div></div></div><div class="card"><div class="table-wrap"><table class="table stack"><thead><tr><th>Nome</th><th>E-mail</th><th>Pacote</th><th>Tipo de site</th><th>Especificações</th><th>Valor pago</th><th>Finalizado em</th><th></th></tr></thead><tbody id="historyRows"></tbody></table></div><div id="historyEmpty" class="empty hidden"><strong>Nenhum pedido finalizado ainda</strong>Quando você clicar em “Pedido finalizado” em um cliente, ele aparece aqui.</div></div></section>
 
 
+
+<section id="bot" class="hidden">
+  <div class="top"><div><h1>Bot</h1><div class="muted">Central de conexão, configuração e controle do Prospector.</div></div>
+    <button class="btn" onclick="saveBotSettings()">Salvar configurações</button>
+  </div>
+  <div class="bot-stat-grid" style="margin-bottom:14px">
+    <div class="bot-stat"><div class="l">Envios hoje</div><div class="n" id="botSent">0 / 25</div></div>
+    <div class="bot-stat"><div class="l">Intervalo</div><div class="n" id="botIntervalStat">60s</div></div>
+    <div class="bot-stat"><div class="l">Fila</div><div class="n" id="botQueue">0</div></div>
+    <div class="bot-stat"><div class="l">Status</div><div class="n" id="botState">Parado</div></div>
+  </div>
+  <div class="bot-layout">
+    <div>
+      <div class="card">
+        <div class="card-head"><div><div class="title">WhatsApp</div><div class="muted" style="font-size:12px">Conecte o número que será usado pelo Prospector.</div></div><span class="bot-status"><span class="dot-live" id="waDot" style="background:var(--red);box-shadow:none"></span><span id="waStatus">Desconectado</span></span></div>
+        <div class="qr-box" id="qrBox"><div class="fakeqr"></div></div>
+        <div class="muted" style="text-align:center;font-size:12px;margin-bottom:12px" id="qrHint">O QR acima é uma interface de demonstração. O conector real ainda precisa ser ligado ao WhatsApp.</div>
+        <button class="btn full" onclick="demoConnect()">Gerar QR / Simular conexão</button>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <div class="card-head"><div><div class="title">Mensagem</div><div class="muted" style="font-size:12px">Personalize o texto usado pelo Prospector.</div></div></div>
+        <div class="field"><label>Mensagem inicial</label><textarea id="botMessage" rows="8" placeholder="Olá! Tudo bem?"></textarea></div>
+        <div class="muted" style="font-size:11.5px">Variáveis: {empresa}, {cidade}, {segmento}</div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="bot-tabs">
+          <button class="bot-tab active" onclick="botTab('rules',this)">Regras</button>
+          <button class="bot-tab" onclick="botTab('schedule',this)">Horários</button>
+          <button class="bot-tab" onclick="botTab('queue',this)">Fila</button>
+        </div>
+        <div id="botRules">
+          <div class="field"><label>Máximo de envios por dia</label><input id="botDaily" type="number" min="1" max="25"></div>
+          <div class="field"><label>Intervalo mínimo entre mensagens (segundos)</label><input id="botInterval" type="number" min="60"></div>
+          <div class="bot-switch"><span>Não repetir número</span><label class="switch"><input id="botNoRepeat" type="checkbox"><span class="slider"></span></label></div>
+          <div class="bot-switch"><span>Respeitar lista de bloqueio</span><label class="switch"><input id="botBlock" type="checkbox"><span class="slider"></span></label></div>
+          <div class="bot-switch"><span>Exigir aprovação antes do envio</span><label class="switch"><input id="botApproval" type="checkbox"><span class="slider"></span></label></div>
+          <div class="bot-switch"><span>Parar ao atingir o limite</span><label class="switch"><input id="botStopLimit" type="checkbox"><span class="slider"></span></label></div>
+          <div class="bot-switch"><span>Pausar após erro</span><label class="switch"><input id="botPauseError" type="checkbox"><span class="slider"></span></label></div>
+        </div>
+        <div id="botSchedule" class="hidden">
+          <div class="field"><label>Início</label><input id="botStart" type="time"></div>
+          <div class="field"><label>Fim</label><input id="botEnd" type="time"></div>
+          <div class="muted" style="font-size:12px">O bot deve operar somente dentro deste horário.</div>
+        </div>
+        <div id="botQueuePanel" class="hidden">
+          <div class="empty" style="padding:28px 10px"><strong id="queueTitle">Fila vazia</strong>Os leads aprovados aparecerão aqui antes do envio.</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <div class="card-head"><div><div class="title">Controle</div><div class="muted" style="font-size:12px">Inicie ou pause o Prospector.</div></div></div>
+        <div style="display:flex;gap:9px">
+          <button class="btn" id="botStartBtn" onclick="toggleBot()">▶ Iniciar bot</button>
+          <button class="btn" style="background:transparent;border:1px solid var(--panel-brd);color:var(--muted)" onclick="resetBotDay()">Zerar contador</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <div class="card-head"><div><div class="title">Atividade</div><div class="muted" style="font-size:12px">Registro local das ações do bot.</div></div><button class="btn" style="padding:8px 12px;font-size:12px;background:transparent;border:1px solid var(--panel-brd);color:var(--muted)" onclick="clearBotLogs()">Limpar</button></div>
+    <div class="log-list" id="botLogs"></div>
+  </div>
+</section>
+
 <section id="team" class="hidden"><div class="top"><div><h1>Equipe</h1><div class="muted">Funcionários e permissões.</div></div></div><div class="card"><div class="empty"><strong>Somente o administrador foi criado</strong>Adicione funcionários pelo backend e defina permissões antes de colocar o sistema em produção.</div></div></section>
 </main>
 
@@ -209,11 +288,13 @@ const ICON = {
   team:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2.9"/><circle cx="16" cy="8" r="2.9"/><path d="M2.3 20c0-3.2 2.6-5.4 5.7-5.4s5.7 2.2 5.7 5.4"/><path d="M14.3 15c2.7.4 4.7 2.6 4.7 5"/></svg>',
   logout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8"/><path d="M10 12h11m0 0-3.2-3.2M21 12l-3.2 3.2"/></svg>',
   check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.3 12.3 2.6 2.6 5-5.2"/></svg>',
+  bot:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M8 7V5h8v2M8 12h.01M16 12h.01M9 16h6"/></svg>',
   search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.6-4.6"/></svg>',
 };
 const NAV_ITEMS = [
   {id:'home',icon:'home',label:'Dashboard'},
   {id:'prospect',icon:'search',label:'Buscar'},
+  {id:'bot',icon:'bot',label:'Bot'},
   {id:'clients',icon:'users',label:'Clientes'},
   {id:'history',icon:'check',label:'Histórico'},
   {id:'team',icon:'team',label:'Equipe'},
@@ -372,7 +453,7 @@ async function doUnlock(){
   }
 }
 function logout(){sessionStorage.removeItem("codelarToken");$("app").classList.add("hidden");$("login").classList.remove("hidden")}
-function go(id){document.querySelectorAll("main section").forEach(s=>s.classList.add("hidden"));$(id).classList.remove("hidden");document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.nav===id));if(id==="clients")renderClients();if(id==="history")renderHistory();if(id==="home")renderChart()}
+function go(id){document.querySelectorAll("main section").forEach(s=>s.classList.add("hidden"));$(id).classList.remove("hidden");document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.nav===id));if(id==="clients")renderClients();if(id==="history")renderHistory();if(id==="home")renderChart();if(id==="bot")loadBotSettings()}
 async function start(){ $("app").classList.remove("hidden");await refresh()}
 async function refresh(){try{const d=await api("/api/dashboard");$("mFinished").textContent=d.finished;$("mReceived").textContent=money(d.totalReceived);$("mMonth").textContent=money(d.monthReceived);$("mSalesMonth").textContent=d.salesMonth;clients=await api("/api/clients");history=await api("/api/clients/history");renderClients();renderHistory();renderChart()}catch(e){if(e.message.includes("autenticado"))logout()}}
 function renderClients(){let q=($("clientSearch")?.value||"").toLowerCase();let a=clients.filter(c=>(c.name+" "+(c.email||"")).toLowerCase().includes(q));$("clientsRows").innerHTML=a.map(c=>`<tr><td data-label="Nome"><b>${esc(c.name)}</b></td><td data-label="E-mail">${esc(c.email||"—")}</td><td data-label="Pacote">${esc(c.site_type||"—")}</td><td data-label="Tipo de site">${esc(c.site_category||"—")}</td><td data-label="Valor pago">${money(c.amount_paid_cents)}</td><td data-label="Data do pedido">${c.client_date?new Date(c.client_date).toLocaleDateString("pt-BR"):new Date(c.created_at).toLocaleDateString("pt-BR")}</td><td><button class="btn" style="padding:7px 12px;font-size:12px" onclick="finishClient(${c.id})">Pedido finalizado</button></td></tr>`).join("");$("clientsEmpty").classList.toggle("hidden",a.length>0)}
@@ -438,5 +519,19 @@ if(sessionStorage.getItem("codelarToken")){
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
 }
+
+const BOT_DEFAULTS={daily:25,interval:60,noRepeat:true,block:true,approval:true,stopLimit:true,pauseError:true,start:"08:00",end:"20:00",message:"Olá! Tudo bem?\nAqui é da Codelar.\n\nEncontramos sua empresa e conhecemos um pouco do trabalho de vocês. Trabalhamos com desenvolvimento de sites e aplicativos personalizados para empresas.\n\nGostaríamos de apresentar uma proposta que pode ser interessante para o negócio de vocês.\nPodemos conversar rapidamente sobre isso?"};
+function botCfg(){try{return {...BOT_DEFAULTS,...JSON.parse(localStorage.getItem("codelarBotSettings")||"{}")}}catch{return {...BOT_DEFAULTS}}}
+function loadBotSettings(){const c=botCfg();$("botDaily").value=Math.min(25,Math.max(1,c.daily));$("botInterval").value=Math.max(60,c.interval);$("botNoRepeat").checked=c.noRepeat;$("botBlock").checked=c.block;$("botApproval").checked=c.approval;$("botStopLimit").checked=c.stopLimit;$("botPauseError").checked=c.pauseError;$("botStart").value=c.start;$("botEnd").value=c.end;$("botMessage").value=c.message;updateBotStats();renderBotLogs()}
+function saveBotSettings(){const c={daily:Math.min(25,Math.max(1,Number($("botDaily").value||25))),interval:Math.max(60,Number($("botInterval").value||60)),noRepeat:$("botNoRepeat").checked,block:$("botBlock").checked,approval:$("botApproval").checked,stopLimit:$("botStopLimit").checked,pauseError:$("botPauseError").checked,start:$("botStart").value,end:$("botEnd").value,message:$("botMessage").value};localStorage.setItem("codelarBotSettings",JSON.stringify(c));updateBotStats();logBot("Configurações salvas","ok")}
+function botState(){return localStorage.getItem("codelarBotRunning")==="1"}
+function updateBotStats(){const c=botCfg(),sent=Number(localStorage.getItem("codelarBotSent")||0);$("botSent").textContent=`${sent} / ${c.daily}`;$("botIntervalStat").textContent=`${c.interval}s`;$("botQueue").textContent=localStorage.getItem("codelarBotQueue")||"0";$("botState").textContent=botState()?"Ativo":"Parado";$("botStartBtn").textContent=botState()?"⏸ Pausar bot":"▶ Iniciar bot"}
+function toggleBot(){const next=!botState();localStorage.setItem("codelarBotRunning",next?"1":"0");logBot(next?"Bot iniciado":"Bot pausado",next?"ok":"warn");updateBotStats()}
+function resetBotDay(){localStorage.setItem("codelarBotSent","0");logBot("Contador diário zerado","warn");updateBotStats()}
+function logBot(msg,type="ok"){const a=JSON.parse(localStorage.getItem("codelarBotLogs")||"[]");a.unshift({msg,type,t:new Date().toLocaleString("pt-BR")});localStorage.setItem("codelarBotLogs",JSON.stringify(a.slice(0,100)));renderBotLogs()}
+function renderBotLogs(){const a=JSON.parse(localStorage.getItem("codelarBotLogs")||"[]");$("botLogs").innerHTML=a.length?a.map(x=>`<div class="log-row"><b>${esc(x.msg)}</b><span class="log-${x.type}">${esc(x.t)}</span></div>`).join(""):`<div class="empty" style="padding:25px"><strong>Nenhuma atividade</strong>As ações do bot aparecerão aqui.</div>`}
+function clearBotLogs(){localStorage.removeItem("codelarBotLogs");renderBotLogs()}
+function demoConnect(){localStorage.setItem("codelarWaConnected","1");$("waStatus").textContent="Conectado (demonstração)";$("waDot").style.background="var(--green)";$("waDot").style.boxShadow="0 0 12px rgba(52,211,153,.65)";$("qrHint").textContent="Conexão visual de demonstração. O conector real do WhatsApp ainda não está implementado.";logBot("WhatsApp conectado em modo de demonstração","ok")}
+function botTab(id,btn){document.querySelectorAll(".bot-tab").forEach(x=>x.classList.remove("active"));btn.classList.add("active");$("botRules").classList.toggle("hidden",id!=="rules");$("botSchedule").classList.toggle("hidden",id!=="schedule");$("botQueuePanel").classList.toggle("hidden",id!=="queue")}
 </script>
 </body></html>
