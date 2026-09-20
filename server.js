@@ -2,6 +2,9 @@ import express from "express";
 import dotenv from "dotenv";
 import { createClient } from "@libsql/client";
 import crypto from "crypto";
+import fs from "fs";
+import path from "path";
+import makeWASocket, { DisconnectReason, useMultiFileAuthState } from "@whiskeysockets/baileys";
 
 dotenv.config();
 const app = express();
@@ -74,6 +77,7 @@ if (!process.env.DASHBOARD_PIN) {
 }
 const validTokens = new Set(); // tokens de sessão em memória (somem ao reiniciar o servidor)
 
+
 app.use(express.json());
 app.use(express.static("public"));
 
@@ -82,6 +86,93 @@ function auth(req, res, next) {
   if (!token || !validTokens.has(token)) return res.status(401).json({ error: "Não autenticado" });
   next();
 }
+
+// WhatsApp Web via pairing code (sem QR).
+// A sessão fica em disco para reconectar depois que o processo reiniciar.
+const WA_AUTH_DIR = process.env.WA_AUTH_DIR || path.resolve("./whatsapp_auth");
+let waSock = null;
+let waState = { status: "disconnected", phone: null, pairingCode: null, lastError: null };
+let waStarting = null;
+
+function waDigits(value) { return String(value || "").replace(/\D/g, ""); }
+
+async function startWhatsApp() {
+  if (waStarting) return waStarting;
+  waStarting = (async () => {
+    fs.mkdirSync(WA_AUTH_DIR, { recursive: true });
+    const { state, saveCreds } = await useMultiFileAuthState(WA_AUTH_DIR);
+    waState.status = state.creds.registered ? "connecting" : "disconnected";
+    const sock = makeWASocket({
+      auth: state,
+      printQRInTerminal: false,
+      markOnlineOnConnect: false,
+    });
+    waSock = sock;
+    sock.ev.on("creds.update", saveCreds);
+    sock.ev.on("connection.update", ({ connection, lastDisconnect }) => {
+      if (connection === "open") {
+        waState.status = "connected";
+        waState.lastError = null;
+        waState.pairingCode = null;
+        waState.phone = sock.user?.id?.split(":")[0] || waState.phone;
+      } else if (connection === "close") {
+        const code = lastDisconnect?.error?.output?.statusCode;
+        waState.status = code === DisconnectReason.loggedOut ? "logged_out" : "disconnected";
+        if (code !== DisconnectReason.loggedOut) {
+          setTimeout(() => { startWhatsApp().catch(err => { waState.lastError = String(err?.message || err); }); }, 2000);
+        }
+      } else if (connection === "connecting") {
+        waState.status = "connecting";
+      }
+    });
+    return sock;
+  })().finally(() => { waStarting = null; });
+  return waStarting;
+}
+
+app.get("/api/whatsapp/status", auth, async (req, res) => {
+  try {
+    await startWhatsApp();
+    res.json({ ...waState, connected: waState.status === "connected" });
+  } catch (e) {
+    waState.lastError = String(e?.message || e);
+    res.status(500).json({ ...waState, error: "Não foi possível iniciar o conector do WhatsApp." });
+  }
+});
+
+app.post("/api/whatsapp/pairing-code", auth, async (req, res) => {
+  try {
+    const phone = waDigits(req.body?.phone);
+    if (!/^55\d{10,11}$/.test(phone)) {
+      return res.status(400).json({ error: "Informe o número completo com DDI 55, somente números. Ex.: 5534999999999" });
+    }
+    const sock = await startWhatsApp();
+    if (waState.status === "connected") return res.status(409).json({ error: "O WhatsApp já está conectado.", ...waState });
+    if (sock.authState?.creds?.registered) {
+      return res.status(409).json({ error: "Já existe uma sessão salva. Aguarde a conexão ou desconecte para vincular outro número.", ...waState });
+    }
+    const code = await sock.requestPairingCode(phone);
+    waState.phone = phone;
+    waState.pairingCode = code;
+    waState.status = "pairing";
+    res.json({ code, phone, status: waState.status });
+  } catch (e) {
+    console.error("WhatsApp pairing error:", e);
+    waState.lastError = String(e?.message || e);
+    res.status(500).json({ error: "Não foi possível gerar o código de vinculação. Tente novamente.", detail: waState.lastError });
+  }
+});
+
+app.post("/api/whatsapp/disconnect", auth, async (req, res) => {
+  try {
+    if (waSock) { try { await waSock.logout(); } catch {} }
+    waSock = null;
+    waState = { status: "disconnected", phone: null, pairingCode: null, lastError: null };
+    fs.rmSync(WA_AUTH_DIR, { recursive: true, force: true });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: "Não foi possível desconectar." }); }
+});
+
 
 app.post("/api/unlock", (req, res) => {
   const { pin } = req.body || {};
