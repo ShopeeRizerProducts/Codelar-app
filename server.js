@@ -166,44 +166,144 @@ app.post("/api/messages", auth, async (req, res) => {
   res.json({ id: Number(r.lastInsertRowid) });
 });
 
+function normalizeText(s) {
+  return (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+// Termos comuns em português -> categoria do OpenStreetMap (pra busca por região, mais resultados que texto livre).
+const TAG_MAP = {
+  padaria: "bakery", panificadora: "bakery",
+  restaurante: "restaurant", pizzaria: "pizza", lanchonete: "fast_food",
+  academia: "gym", farmacia: "pharmacy",
+  salao: "hairdresser", "salao de beleza": "hairdresser", barbearia: "hairdresser",
+  clinica: "clinic", dentista: "dentist", "clinica odontologica": "dentist",
+  advocacia: "lawyer", advogado: "lawyer",
+  contabilidade: "accounting", contador: "accounting",
+  petshop: "pet", "pet shop": "pet",
+  oficina: "car_repair", mecanica: "car_repair", "oficina mecanica": "car_repair",
+  mercado: "supermarket", supermercado: "supermarket", mercearia: "convenience",
+  hotel: "hotel", pousada: "guest_house",
+  livraria: "bookshop", papelaria: "stationery",
+  floricultura: "florist", joalheria: "jewelry",
+  otica: "optician", imobiliaria: "real_estate_agency",
+  "loja de roupas": "clothes", boutique: "clothes",
+  cafe: "cafe", cafeteria: "cafe",
+};
+function phoneToWhatsapp(raw) {
+  if (!raw) return null;
+  const digits = String(raw).replace(/\D/g, "");
+  if (!digits) return null;
+  if (digits.startsWith("55") && digits.length >= 12) return digits;
+  if (digits.length === 10 || digits.length === 11) return "55" + digits;
+  if (digits.length >= 12) return digits;
+  return null;
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 // Prospecção: busca empresas via LocationIQ (compatível com Nominatim/OpenStreetMap).
 // Precisa de uma chave gratuita em locationiq.com (5.000 buscas/dia grátis, sem cartão).
-// "Sem site" é um indício, não garantia — depende do que está cadastrado publicamente no mapa.
+// Só retorna quem tem telefone encontrado (pra permitir o botão de WhatsApp) — é um indício
+// de oportunidade baseado em dado público, não garantia de que a empresa não tem site.
 app.get("/api/prospect", auth, async (req, res) => {
   const query = (req.query.query || "").trim();
   const state = (req.query.state || "").trim();
   const city = (req.query.city || "").trim();
   if (!query) return res.status(400).json({ error: "Informe o tipo de negócio que você quer buscar" });
-  if (!process.env.LOCATIONIQ_API_KEY) {
+  const key = process.env.LOCATIONIQ_API_KEY;
+  if (!key) {
     return res.status(503).json({ error: "Busca de empresas ainda não configurada — falta a chave LOCATIONIQ_API_KEY no servidor." });
   }
 
   const locationParts = [city, state, "Brasil"].filter(Boolean).join(", ");
-  const q = locationParts ? `${query} em ${locationParts}` : `${query}, Brasil`;
+  const tag = TAG_MAP[normalizeText(query)];
 
   try {
-    const url = new URL("https://us1.locationiq.com/v1/search");
-    url.searchParams.set("key", process.env.LOCATIONIQ_API_KEY);
-    url.searchParams.set("q", q);
-    url.searchParams.set("format", "json");
-    url.searchParams.set("addressdetails", "1");
-    url.searchParams.set("extratags", "1");
-    url.searchParams.set("limit", "10");
-    const r = await fetch(url, { headers: { Accept: "application/json" } });
-    const bodyText = await r.text();
-    if (!r.ok) {
-      console.error("LocationIQ respondeu", r.status, bodyText.slice(0, 300));
-      if (r.status === 404) return res.json({ results: [] }); // LocationIQ retorna 404 quando não acha nada
-      return res.status(502).json({ error: `Busca falhou (status ${r.status}). ${bodyText.slice(0, 150)}` });
+    let rawResults = [];
+
+    if (tag) {
+      // 1) acha um ponto central pra região pedida
+      const geoUrl = new URL("https://us1.locationiq.com/v1/search");
+      geoUrl.searchParams.set("key", key);
+      geoUrl.searchParams.set("q", locationParts || "Brasil");
+      geoUrl.searchParams.set("format", "json");
+      geoUrl.searchParams.set("limit", "1");
+      const geoR = await fetch(geoUrl, { headers: { Accept: "application/json" } });
+      const geoText = await geoR.text();
+      if (!geoR.ok) return res.status(502).json({ error: `Não encontrei essa localização (status ${geoR.status}).` });
+      const geoData = JSON.parse(geoText);
+      if (!geoData.length) return res.json({ results: [] });
+      const { lat, lon } = geoData[0];
+
+      // 2) busca por categoria perto desse ponto (mais resultados que texto livre)
+      const radius = city ? 10000 : state ? 45000 : 20000;
+      const nearUrl = new URL("https://us1.locationiq.com/v1/nearby");
+      nearUrl.searchParams.set("key", key);
+      nearUrl.searchParams.set("lat", lat);
+      nearUrl.searchParams.set("lon", lon);
+      nearUrl.searchParams.set("tag", tag);
+      nearUrl.searchParams.set("radius", String(radius));
+      nearUrl.searchParams.set("format", "json");
+      const nearR = await fetch(nearUrl, { headers: { Accept: "application/json" } });
+      const nearText = await nearR.text();
+      if (!nearR.ok) {
+        console.error("LocationIQ nearby respondeu", nearR.status, nearText.slice(0, 300));
+        return res.status(502).json({ error: `Busca falhou (status ${nearR.status}). ${nearText.slice(0, 150)}` });
+      }
+      rawResults = JSON.parse(nearText);
+    } else {
+      // categoria não reconhecida no dicionário: busca por texto livre
+      const q = locationParts ? `${query} em ${locationParts}` : `${query}, Brasil`;
+      const url = new URL("https://us1.locationiq.com/v1/search");
+      url.searchParams.set("key", key);
+      url.searchParams.set("q", q);
+      url.searchParams.set("format", "json");
+      url.searchParams.set("addressdetails", "1");
+      url.searchParams.set("extratags", "1");
+      url.searchParams.set("limit", "20");
+      const r = await fetch(url, { headers: { Accept: "application/json" } });
+      const bodyText = await r.text();
+      if (!r.ok) {
+        if (r.status === 404) return res.json({ results: [] });
+        console.error("LocationIQ search respondeu", r.status, bodyText.slice(0, 300));
+        return res.status(502).json({ error: `Busca falhou (status ${r.status}). ${bodyText.slice(0, 150)}` });
+      }
+      rawResults = JSON.parse(bodyText);
     }
-    const data = JSON.parse(bodyText);
-    const results = data.slice(0, 10).map((item) => ({
-      name: item.display_name.split(",")[0],
-      address: item.display_name,
-      phone: item.extratags?.phone || item.extratags?.["contact:phone"] || null,
-      website: item.extratags?.website || item.extratags?.["contact:website"] || null,
-    }));
-    res.json({ results });
+
+    // A Nearby API não devolve telefone/site direto — busca esse detalhe por item (respeitando 2 req/s do plano grátis).
+    const enriched = [];
+    for (const item of rawResults.slice(0, 18)) {
+      let phone = item.extratags?.phone || item.extratags?.["contact:phone"] || null;
+      let website = item.extratags?.website || item.extratags?.["contact:website"] || null;
+      if (!phone && !website && item.lat && item.lon) {
+        try {
+          const revUrl = new URL("https://us1.locationiq.com/v1/reverse");
+          revUrl.searchParams.set("key", key);
+          revUrl.searchParams.set("lat", item.lat);
+          revUrl.searchParams.set("lon", item.lon);
+          revUrl.searchParams.set("format", "json");
+          revUrl.searchParams.set("extratags", "1");
+          const revR = await fetch(revUrl, { headers: { Accept: "application/json" } });
+          if (revR.ok) {
+            const revData = await revR.json();
+            phone = revData.extratags?.phone || revData.extratags?.["contact:phone"] || null;
+            website = revData.extratags?.website || revData.extratags?.["contact:website"] || null;
+          }
+        } catch (e) {
+          /* segue sem contato pra esse item */
+        }
+        await sleep(550);
+      }
+      enriched.push({
+        name: item.name || item.display_name.split(",")[0],
+        address: item.display_name,
+        phone,
+        website,
+        whatsapp: phoneToWhatsapp(phone),
+      });
+    }
+
+    const withPhone = enriched.filter((r) => r.whatsapp).slice(0, 10);
+    res.json({ results: withPhone });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: `Não foi possível buscar agora: ${e.message}` });
