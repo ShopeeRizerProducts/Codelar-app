@@ -185,10 +185,17 @@ app.get("/api/prospect", auth, async (req, res) => {
     url.searchParams.set("extratags", "1");
     url.searchParams.set("limit", "10");
     const r = await fetch(url, {
-      headers: { "User-Agent": "CodelarOS/1.0 (uso pessoal - prospeccao de clientes)" },
+      headers: {
+        "User-Agent": "CodelarOS/1.0 (contato: uso pessoal - prospeccao de clientes)",
+        Accept: "application/json",
+      },
     });
-    if (!r.ok) throw new Error("Falha na busca");
-    const data = await r.json();
+    const bodyText = await r.text();
+    if (!r.ok) {
+      console.error("Nominatim respondeu", r.status, bodyText.slice(0, 300));
+      return res.status(502).json({ error: `Busca falhou (status ${r.status}). ${bodyText.slice(0, 150)}` });
+    }
+    const data = JSON.parse(bodyText);
     const results = data.slice(0, 10).map((item) => ({
       name: item.display_name.split(",")[0],
       address: item.display_name,
@@ -198,7 +205,7 @@ app.get("/api/prospect", auth, async (req, res) => {
     res.json({ results });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Não foi possível buscar agora. Tenta de novo em alguns segundos." });
+    res.status(500).json({ error: `Não foi possível buscar agora: ${e.message}` });
   }
 });
 
