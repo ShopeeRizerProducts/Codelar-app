@@ -166,33 +166,34 @@ app.post("/api/messages", auth, async (req, res) => {
   res.json({ id: Number(r.lastInsertRowid) });
 });
 
-// Prospecção: busca empresas via OpenStreetMap/Nominatim (gratuito, sem chave de API).
+// Prospecção: busca empresas via LocationIQ (compatível com Nominatim/OpenStreetMap).
+// Precisa de uma chave gratuita em locationiq.com (5.000 buscas/dia grátis, sem cartão).
 // "Sem site" é um indício, não garantia — depende do que está cadastrado publicamente no mapa.
 app.get("/api/prospect", auth, async (req, res) => {
   const query = (req.query.query || "").trim();
   const state = (req.query.state || "").trim();
   const city = (req.query.city || "").trim();
   if (!query) return res.status(400).json({ error: "Informe o tipo de negócio que você quer buscar" });
+  if (!process.env.LOCATIONIQ_API_KEY) {
+    return res.status(503).json({ error: "Busca de empresas ainda não configurada — falta a chave LOCATIONIQ_API_KEY no servidor." });
+  }
 
   const locationParts = [city, state, "Brasil"].filter(Boolean).join(", ");
   const q = locationParts ? `${query} em ${locationParts}` : `${query}, Brasil`;
 
   try {
-    const url = new URL("https://nominatim.openstreetmap.org/search");
+    const url = new URL("https://us1.locationiq.com/v1/search");
+    url.searchParams.set("key", process.env.LOCATIONIQ_API_KEY);
     url.searchParams.set("q", q);
-    url.searchParams.set("format", "jsonv2");
+    url.searchParams.set("format", "json");
     url.searchParams.set("addressdetails", "1");
     url.searchParams.set("extratags", "1");
     url.searchParams.set("limit", "10");
-    const r = await fetch(url, {
-      headers: {
-        "User-Agent": "CodelarOS/1.0 (contato: uso pessoal - prospeccao de clientes)",
-        Accept: "application/json",
-      },
-    });
+    const r = await fetch(url, { headers: { Accept: "application/json" } });
     const bodyText = await r.text();
     if (!r.ok) {
-      console.error("Nominatim respondeu", r.status, bodyText.slice(0, 300));
+      console.error("LocationIQ respondeu", r.status, bodyText.slice(0, 300));
+      if (r.status === 404) return res.json({ results: [] }); // LocationIQ retorna 404 quando não acha nada
       return res.status(502).json({ error: `Busca falhou (status ${r.status}). ${bodyText.slice(0, 150)}` });
     }
     const data = JSON.parse(bodyText);
