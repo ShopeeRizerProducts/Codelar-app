@@ -205,13 +205,24 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue)}
 <div id="prospectResults"></div>
 </section><section id="clients" class="hidden"><div class="top"><div><h1>Clientes</h1><div class="muted">Cadastre somente clientes reais.</div></div><button class="btn" onclick="openClient()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>Cliente</button></div><div class="card"><div class="toolbar"><input id="clientSearch" placeholder="Pesquisar..." oninput="renderClients()"></div><div class="table-wrap"><table class="table stack"><thead><tr><th>Nome</th><th>E-mail</th><th>Pacote</th><th>Tipo de site</th><th>Valor pago</th><th>Data do pedido</th><th></th></tr></thead><tbody id="clientsRows"></tbody></table></div><div id="clientsEmpty" class="empty hidden"><strong>Nenhum cliente cadastrado</strong>Use “+ Cliente” para registrar seu primeiro cliente.</div></div></section>
 
-<section id="history" class="hidden"><div class="top"><div><h1>Histórico</h1><div class="muted">Pedidos finalizados.</div></div></div><div class="card"><div class="table-wrap"><table class="table stack"><thead><tr><th>Nome</th><th>E-mail</th><th>Pacote</th><th>Tipo de site</th><th>Especificações</th><th>Valor pago</th><th>Finalizado em</th><th></th></tr></thead><tbody id="historyRows"></tbody></table></div><div id="historyEmpty" class="empty hidden"><strong>Nenhum pedido finalizado ainda</strong>Quando você clicar em “Pedido finalizado” em um cliente, ele aparece aqui.</div></div></section>
+<section id="history" class="hidden"><div class="top"><div><h1>Histórico</h1><div class="muted">Pedidos finalizados e empresas já contatadas.</div></div></div>
+<div class="range-group" style="margin-bottom:14px" id="historyTabs">
+  <button class="range-btn active" onclick="setHistoryTab('clients',this)">Clientes</button>
+  <button class="range-btn" onclick="setHistoryTab('contacted',this)">Empresas contatadas</button>
+</div>
+<div id="historyClientsPane"><div class="card"><div class="table-wrap"><table class="table stack"><thead><tr><th>Nome</th><th>E-mail</th><th>Pacote</th><th>Tipo de site</th><th>Especificações</th><th>Valor pago</th><th>Finalizado em</th><th></th></tr></thead><tbody id="historyRows"></tbody></table></div><div id="historyEmpty" class="empty hidden"><strong>Nenhum pedido finalizado ainda</strong>Quando você clicar em “Pedido finalizado” em um cliente, ele aparece aqui.</div></div></div>
+<div id="historyContactedPane" class="hidden"><div class="card"><div class="table-wrap"><table class="table stack"><thead><tr><th>Empresa</th><th>Endereço</th><th>Telefone</th><th>Contatado em</th><th></th></tr></thead><tbody id="contactedRows"></tbody></table></div><div id="contactedEmpty" class="empty hidden"><strong>Nenhuma empresa contatada ainda</strong>Marque como contatada na aba Buscar depois de chamar alguém no WhatsApp.</div></div></div>
+</section>
 
 
 
 <section id="bot" class="hidden">
-  <div class="top"><div><h1>Bot</h1><div class="muted">Central de conexão, configuração e controle do Prospector.</div></div>
+  <div class="top"><div><h1>Bot</h1><div class="muted">Central de conexão do WhatsApp.</div></div>
     <button class="btn" onclick="saveBotSettings()">Salvar configurações</button>
+  </div>
+  <div class="card" style="margin-bottom:14px;border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.06)">
+    <div style="font-weight:700;font-size:13px;color:#fcd34d;margin-bottom:4px">⚠ Envio automático não está ativo</div>
+    <div class="muted" style="font-size:12.5px">Por segurança do seu número (risco real de banimento) e pra não mandar mensagem sem consentimento, o disparo automático em massa não foi implementado. Os campos abaixo ficam salvos, mas "Iniciar bot" não envia nada sozinho. Use o botão "WhatsApp Business" na aba Buscar pra chamar cada empresa manualmente.</div>
   </div>
   <div class="bot-stat-grid" style="margin-bottom:14px">
     <div class="bot-stat"><div class="l">Envios hoje</div><div class="n" id="botSent">0 / 25</div></div>
@@ -267,7 +278,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue)}
       <div class="card" style="margin-top:14px">
         <div class="card-head"><div><div class="title">Controle</div><div class="muted" style="font-size:12px">Inicie ou pause o Prospector.</div></div></div>
         <div style="display:flex;gap:9px">
-          <button class="btn" id="botStartBtn" onclick="toggleBot()">▶ Iniciar bot</button>
+          <button class="btn" id="botStartBtn" disabled title="Envio automático não implementado — veja o aviso acima" style="opacity:.5;cursor:not-allowed">▶ Envio automático indisponível</button>
           <button class="btn" style="background:transparent;border:1px solid var(--panel-brd);color:var(--muted)" onclick="resetBotDay()">Zerar contador</button>
         </div>
       </div>
@@ -440,7 +451,7 @@ function renderTypeChart(){
   `;
 }
 
-let clients=[],history=[];
+let clients=[],history=[],contacted=[],lastProspectResults=[];
 const $=id=>document.getElementById(id);
 const money=c=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format((c||0)/100);
 async function api(path,opt={}){opt.headers={...(opt.headers||{}),"Content-Type":"application/json","x-codelar-token":sessionStorage.getItem("codelarToken")||""};const r=await fetch(path,opt);if(!r.ok)throw new Error((await r.json()).error||"Erro");return r.json()}
@@ -464,7 +475,7 @@ async function doUnlock(){
 function logout(){sessionStorage.removeItem("codelarToken");$("app").classList.add("hidden");$("login").classList.remove("hidden")}
 function go(id){document.querySelectorAll("main section").forEach(s=>s.classList.add("hidden"));$(id).classList.remove("hidden");document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.nav===id));if(id==="clients")renderClients();if(id==="history")renderHistory();if(id==="home")renderChart();if(id==="bot")loadBotSettings()}
 async function start(){ $("app").classList.remove("hidden");await refresh()}
-async function refresh(){try{const d=await api("/api/dashboard");$("mFinished").textContent=d.finished;$("mReceived").textContent=money(d.totalReceived);$("mMonth").textContent=money(d.monthReceived);$("mSalesMonth").textContent=d.salesMonth;clients=await api("/api/clients");history=await api("/api/clients/history");renderClients();renderHistory();renderChart()}catch(e){if(e.message.includes("autenticado"))logout()}}
+async function refresh(){try{const d=await api("/api/dashboard");$("mFinished").textContent=d.finished;$("mReceived").textContent=money(d.totalReceived);$("mMonth").textContent=money(d.monthReceived);$("mSalesMonth").textContent=d.salesMonth;clients=await api("/api/clients");history=await api("/api/clients/history");contacted=await api("/api/prospect/contacted");renderClients();renderHistory();renderChart()}catch(e){if(e.message.includes("autenticado"))logout()}}
 function renderClients(){let q=($("clientSearch")?.value||"").toLowerCase();let a=clients.filter(c=>(c.name+" "+(c.email||"")).toLowerCase().includes(q));$("clientsRows").innerHTML=a.map(c=>`<tr><td data-label="Nome"><b>${esc(c.name)}</b></td><td data-label="E-mail">${esc(c.email||"—")}</td><td data-label="Pacote">${esc(c.site_type||"—")}</td><td data-label="Tipo de site">${esc(c.site_category||"—")}</td><td data-label="Valor pago">${money(c.amount_paid_cents)}</td><td data-label="Data do pedido">${c.client_date?new Date(c.client_date).toLocaleDateString("pt-BR"):new Date(c.created_at).toLocaleDateString("pt-BR")}</td><td><button class="btn" style="padding:7px 12px;font-size:12px" onclick="finishClient(${c.id})">Pedido finalizado</button></td></tr>`).join("");$("clientsEmpty").classList.toggle("hidden",a.length>0)}
 function renderHistory(){$("historyRows").innerHTML=history.map(c=>`<tr><td data-label="Nome"><b>${esc(c.name)}</b></td><td data-label="E-mail">${esc(c.email||"—")}</td><td data-label="Pacote">${esc(c.site_type||"—")}</td><td data-label="Tipo de site">${esc(c.site_category||"—")}</td><td data-label="Especificações" style="max-width:260px;white-space:pre-wrap">${esc(c.site_specs||"—")}</td><td data-label="Valor pago">${money(c.amount_paid_cents)}</td><td data-label="Finalizado em">${c.finished_at?new Date(c.finished_at).toLocaleDateString("pt-BR"):"—"}</td><td style="display:flex;gap:6px"><button class="btn" style="padding:7px 12px;font-size:12px;background:transparent;border:1px solid var(--panel-brd);color:var(--muted)" onclick="reopenClient(${c.id})">Reabrir</button><button class="btn" style="padding:7px 12px;font-size:12px;background:transparent;border:1px solid rgba(248,113,113,.35);color:var(--red)" onclick="cancelClient(${c.id})">Anular</button></td></tr>`).join("");$("historyEmpty").classList.toggle("hidden",history.length>0)}
 const PACKAGES = [
@@ -476,6 +487,10 @@ const PACKAGES = [
 ];
 function openClient(){ $("modalTitle").textContent="Novo cliente";$("modalBody").innerHTML=`<div class="field"><label>Nome</label><input id="mn"></div><div class="field"><label>E-mail</label><input id="me" type="email"></div><div class="field"><label>Data do pedido</label><input id="mdate" type="date" value="${new Date().toISOString().slice(0,10)}"></div><div class="field"><label>Pacote</label><select id="mtype" onchange="onPackageChange()">${PACKAGES.map(p=>`<option value="${esc(p.label)}" data-price="${p.price}">${esc(p.label)}</option>`).join("")}</select></div><div class="field"><label>Tipo de site</label><input id="mcategory" placeholder="Ex: Institucional, E-commerce, Blog"></div><div class="field"><label>Especificações do site</label><textarea id="mspecs" placeholder="Funcionalidades, referências, observações..."></textarea></div><div class="field"><label>Valor pago (R$)</label><input id="mpaid" type="number" step="0.01" min="0" value="${PACKAGES[0].price}"><div class="hint" style="text-align:left;margin-top:6px">Vem preenchido com o preço do pacote — edite se tiver adicional ou desconto.</div></div><button class="btn full" onclick="saveClient()">Salvar cliente</button>`;$("modal").classList.remove("hidden")}
 function onPackageChange(){const opt=$("mtype").selectedOptions[0];$("mpaid").value=opt.dataset.price;}
+function setHistoryTab(id,btn){document.querySelectorAll("#historyTabs .range-btn").forEach(b=>b.classList.remove("active"));btn.classList.add("active");$("historyClientsPane").classList.toggle("hidden",id!=="clients");$("historyContactedPane").classList.toggle("hidden",id!=="contacted");if(id==="contacted")renderContacted()}
+function renderContacted(){$("contactedRows").innerHTML=contacted.map(c=>`<tr><td data-label="Empresa"><b>${esc(c.name)}</b></td><td data-label="Endereço">${esc(c.address||"—")}</td><td data-label="Telefone">${esc(c.phone)}</td><td data-label="Contatado em">${new Date(c.contacted_at).toLocaleDateString("pt-BR")}</td><td><button class="btn" style="padding:7px 12px;font-size:12px;background:transparent;border:1px solid rgba(248,113,113,.35);color:var(--red)" onclick="removeContacted(${c.id})">Remover</button></td></tr>`).join("");$("contactedEmpty").classList.toggle("hidden",contacted.length>0)}
+async function removeContacted(id){if(!confirm("Remover essa empresa da lista de contatadas?"))return;try{await api(`/api/prospect/contacted/${id}`,{method:"DELETE"});contacted=await api("/api/prospect/contacted");renderContacted()}catch(e){alert(e.message)}}
+async function markContacted(idx,btn){const r=lastProspectResults[idx];if(!r)return;btn.disabled=true;btn.textContent="Marcando...";try{await api("/api/prospect/contact",{method:"POST",body:JSON.stringify({name:r.name,address:r.address,phone:r.whatsapp,website:r.website||""})});contacted=await api("/api/prospect/contacted");btn.textContent="✓ Contatada";btn.style.background="rgba(52,211,153,.15)";btn.style.color="#6ee7b7";btn.style.border="1px solid rgba(52,211,153,.3)"}catch(e){alert(e.message);btn.disabled=false;btn.textContent="Marcar como contatada"}}
 async function doProspect(){
   const query=$("pqQuery").value.trim();
   if(!query){ alert("Digita o tipo de negócio que você quer buscar."); return; }
@@ -492,8 +507,11 @@ async function doProspect(){
   }
 }
 function renderProspectResults(results){
+  lastProspectResults = results;
   if(!results.length){ $("prospectResults").innerHTML=`<div class="card" style="margin-top:12px"><div class="chart-empty">Nenhuma empresa encontrada com esses filtros — tenta afrouxar o filtro ou mudar o termo/região.</div></div>`; return; }
-  $("prospectResults").innerHTML = results.map(r=>`
+  $("prospectResults").innerHTML = results.map((r,idx)=>{
+    const waBusinessUrl = `intent://send?phone=${r.whatsapp}#Intent;scheme=whatsapp;package=com.whatsapp.w4b;S.browser_fallback_url=${encodeURIComponent('https://wa.me/'+r.whatsapp)};end`;
+    return `
     <div class="card" style="margin-top:12px">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
         <div style="min-width:0">
@@ -503,17 +521,20 @@ function renderProspectResults(results){
         <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex:none">
           <span class="pill ${r.website?'':'ok'}">${r.website?"Já tem site":"Sem site"}</span>
           <span class="pill ${r.whatsappConfirmed?'ok':''}" style="font-size:11px">${r.whatsappConfirmed?"WhatsApp confirmado":"Só telefone"}</span>
+          ${r.alreadyContacted?'<span class="pill" style="font-size:11px;background:rgba(251,191,36,.14);color:#fcd34d">Já contatada</span>':''}
         </div>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;align-items:center">
         ${r.website?`<a href="${esc(r.website)}" target="_blank" style="color:#7cb0ff;font-size:12.5px">${esc(r.website)}</a>`:""}
-        <a href="https://wa.me/${r.whatsapp}" target="_blank" class="btn" style="padding:9px 14px;font-size:12.5px;background:linear-gradient(180deg,#25d366,#1da851);margin-left:auto">
+        <button class="btn" style="padding:9px 14px;font-size:12.5px;background:transparent;border:1px solid var(--panel-brd);color:var(--muted);margin-left:auto" onclick="markContacted(${idx},this)" ${r.alreadyContacted?'disabled':''}>${r.alreadyContacted?'✓ Contatada':'Marcar como contatada'}</button>
+        <a href="${waBusinessUrl}" class="btn" style="padding:9px 14px;font-size:12.5px;background:linear-gradient(180deg,#25d366,#1da851)">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2zm0 18.2a8.1 8.1 0 0 1-4.2-1.2l-.3-.2-3.1.8.8-3-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1s-.7.8-.9 1c-.2.2-.3.2-.6.1a6.7 6.7 0 0 1-2-1.2 7.4 7.4 0 0 1-1.4-1.7c-.1-.2 0-.4.1-.5s.2-.3.4-.4a1.6 1.6 0 0 0 .2-.4.4.4 0 0 0 0-.4c-.1-.1-.6-1.4-.8-1.9s-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 2.9 2.9 0 0 0-.9 2.2 5.1 5.1 0 0 0 1.1 2.7 11.6 11.6 0 0 0 4.5 4c.6.3 1.1.4 1.5.6a3.6 3.6 0 0 0 1.6.1 2.7 2.7 0 0 0 1.8-1.2 2.1 2.1 0 0 0 .1-1.2c-.1-.1-.2-.2-.4-.3z"/></svg>
-          Chamar no WhatsApp
+          WhatsApp Business
         </a>
       </div>
     </div>
-  `).join("");
+  `;
+  }).join("");
 }
 async function saveClient(){try{await api("/api/clients",{method:"POST",body:JSON.stringify({name:$("mn").value,email:$("me").value,client_date:$("mdate").value||null,site_type:$("mtype").value,site_category:$("mcategory").value,site_specs:$("mspecs").value,amount_paid_cents:Math.round(Number($("mpaid").value||0)*100)})});closeModal();await refresh();go("clients")}catch(e){alert(e.message)}}
 async function finishClient(id){if(!confirm("Marcar esse pedido como finalizado? Ele vai para o Histórico.")) return;try{await api(`/api/clients/${id}/finish`,{method:"PUT",body:JSON.stringify({finished:1})});await refresh();go("clients")}catch(e){alert(e.message)}}
@@ -534,7 +555,7 @@ function botCfg(){try{return {...BOT_DEFAULTS,...JSON.parse(localStorage.getItem
 async function loadBotSettings(){const c=botCfg();$("botDaily").value=Math.min(25,Math.max(1,c.daily));$("botInterval").value=Math.max(60,c.interval);$("botNoRepeat").checked=c.noRepeat;$("botBlock").checked=c.block;$("botApproval").checked=c.approval;$("botStopLimit").checked=c.stopLimit;$("botPauseError").checked=c.pauseError;$("botStart").value=c.start;$("botEnd").value=c.end;$("botMessage").value=c.message;updateBotStats();renderBotLogs();await refreshWhatsAppStatus()}
 function saveBotSettings(){const c={daily:Math.min(25,Math.max(1,Number($("botDaily").value||25))),interval:Math.max(60,Number($("botInterval").value||60)),noRepeat:$("botNoRepeat").checked,block:$("botBlock").checked,approval:$("botApproval").checked,stopLimit:$("botStopLimit").checked,pauseError:$("botPauseError").checked,start:$("botStart").value,end:$("botEnd").value,message:$("botMessage").value};localStorage.setItem("codelarBotSettings",JSON.stringify(c));updateBotStats();logBot("Configurações salvas","ok")}
 function botState(){return localStorage.getItem("codelarBotRunning")==="1"}
-function updateBotStats(){const c=botCfg(),sent=Number(localStorage.getItem("codelarBotSent")||0);$("botSent").textContent=`${sent} / ${c.daily}`;$("botIntervalStat").textContent=`${c.interval}s`;$("botQueue").textContent=localStorage.getItem("codelarBotQueue")||"0";$("botState").textContent=botState()?"Ativo":"Parado";$("botStartBtn").textContent=botState()?"⏸ Pausar bot":"▶ Iniciar bot"}
+function updateBotStats(){const c=botCfg();$("botIntervalStat").textContent=`${c.interval}s`;$("botState").textContent="Indisponível"}
 function toggleBot(){const next=!botState();localStorage.setItem("codelarBotRunning",next?"1":"0");logBot(next?"Bot iniciado":"Bot pausado",next?"ok":"warn");updateBotStats()}
 function resetBotDay(){localStorage.setItem("codelarBotSent","0");logBot("Contador diário zerado","warn");updateBotStats()}
 function logBot(msg,type="ok"){const a=JSON.parse(localStorage.getItem("codelarBotLogs")||"[]");a.unshift({msg,type,t:new Date().toLocaleString("pt-BR")});localStorage.setItem("codelarBotLogs",JSON.stringify(a.slice(0,100)));renderBotLogs()}
