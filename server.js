@@ -192,10 +192,31 @@ function phoneToWhatsapp(raw) {
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Prospecção: busca empresas via LocationIQ (compatível com Nominatim/OpenStreetMap).
-// Precisa de uma chave gratuita em locationiq.com (5.000 buscas/dia grátis, sem cartão).
-// Só retorna quem tem telefone encontrado (pra permitir o botão de WhatsApp) — é um indício
-// de oportunidade baseado em dado público, não garantia de que a empresa não tem site.
+// Prospecção: usa Overpass (OpenStreetMap) pra achar TODAS as empresas de uma categoria numa
+// região de uma vez só, já com telefone/site nas próprias tags — muito mais rápido e confiável
+// que buscar item por item. Complementa com busca por texto livre (LocationIQ) quando a
+// categoria não é reconhecida, ou pra somar mais resultados.
+const OSM_TAG_MAP = {
+  padaria: ["shop", "bakery"], panificadora: ["shop", "bakery"],
+  restaurante: ["amenity", "restaurant"], pizzaria: ["amenity", "restaurant"],
+  lanchonete: ["amenity", "fast_food"],
+  academia: ["leisure", "fitness_centre"],
+  farmacia: ["amenity", "pharmacy"],
+  salao: ["shop", "hairdresser"], "salao de beleza": ["shop", "hairdresser"], barbearia: ["shop", "hairdresser"],
+  clinica: ["amenity", "clinic"], dentista: ["amenity", "dentist"], "clinica odontologica": ["amenity", "dentist"],
+  advocacia: ["office", "lawyer"], advogado: ["office", "lawyer"],
+  contabilidade: ["office", "accountant"], contador: ["office", "accountant"],
+  petshop: ["shop", "pet"], "pet shop": ["shop", "pet"],
+  oficina: ["shop", "car_repair"], mecanica: ["shop", "car_repair"], "oficina mecanica": ["shop", "car_repair"],
+  mercado: ["shop", "supermarket"], supermercado: ["shop", "supermarket"], mercearia: ["shop", "convenience"],
+  hotel: ["tourism", "hotel"], pousada: ["tourism", "guest_house"],
+  livraria: ["shop", "books"], papelaria: ["shop", "stationery"],
+  floricultura: ["shop", "florist"], joalheria: ["shop", "jewelry"],
+  otica: ["shop", "optician"], imobiliaria: ["office", "estate_agent"],
+  "loja de roupas": ["shop", "clothes"], boutique: ["shop", "clothes"],
+  cafe: ["amenity", "cafe"], cafeteria: ["amenity", "cafe"],
+};
+
 async function geocodeArea(key, q) {
   const geoUrl = new URL("https://us1.locationiq.com/v1/search");
   geoUrl.searchParams.set("key", key);
@@ -209,39 +230,33 @@ async function geocodeArea(key, q) {
   return { lat: geoData[0].lat, lon: geoData[0].lon };
 }
 
-async function fetchNearby(key, lat, lon, tag, radius) {
-  const nearUrl = new URL("https://us1.locationiq.com/v1/nearby");
-  nearUrl.searchParams.set("key", key);
-  nearUrl.searchParams.set("lat", lat);
-  nearUrl.searchParams.set("lon", lon);
-  nearUrl.searchParams.set("tag", tag);
-  nearUrl.searchParams.set("radius", String(radius));
-  nearUrl.searchParams.set("format", "json");
-  try {
-    const r = await fetch(nearUrl, { headers: { Accept: "application/json" } });
-    return r.ok ? await r.json() : [];
-  } catch (e) {
-    return [];
-  }
+function addressFromTags(tags) {
+  const parts = [tags["addr:street"], tags["addr:housenumber"], tags["addr:suburb"], tags["addr:city"]].filter(Boolean);
+  return parts.length ? parts.join(", ") : null;
 }
 
-// Busca o item pelo ID exato do OpenStreetMap — muito mais confiável que "o que tiver mais perto
-// dessa coordenada", que às vezes devolve um vizinho errado (foi o que causou contato trocado).
-async function lookupByOsmId(key, osmType, osmId) {
-  if (!osmType || !osmId) return null;
-  const letter = String(osmType)[0].toUpperCase();
-  const lookupUrl = new URL("https://us1.locationiq.com/v1/lookup");
-  lookupUrl.searchParams.set("key", key);
-  lookupUrl.searchParams.set("osm_ids", `${letter}${osmId}`);
-  lookupUrl.searchParams.set("format", "json");
-  lookupUrl.searchParams.set("extratags", "1");
+async function queryOverpass(lat, lon, osmKey, osmValue, radius) {
+  const query = `[out:json][timeout:25];(node["${osmKey}"="${osmValue}"](around:${radius},${lat},${lon});way["${osmKey}"="${osmValue}"](around:${radius},${lat},${lon}););out center tags qt;`;
   try {
-    const r = await fetch(lookupUrl, { headers: { Accept: "application/json" } });
-    if (!r.ok) return null;
+    const r = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "data=" + encodeURIComponent(query),
+    });
+    if (!r.ok) return [];
     const data = await r.json();
-    return data?.[0] || null;
+    return (data.elements || []).map((el) => {
+      const tags = el.tags || {};
+      return {
+        name: tags.name || null,
+        address: addressFromTags(tags),
+        phone: tags.phone || tags["contact:phone"] || null,
+        website: tags.website || tags["contact:website"] || null,
+        whatsappTag: tags.whatsapp || tags["contact:whatsapp"] || null,
+      };
+    }).filter((it) => it.name);
   } catch (e) {
-    return null;
+    return [];
   }
 }
 
@@ -259,41 +274,37 @@ app.get("/api/prospect", auth, async (req, res) => {
   }
 
   const locationParts = [city, state, "Brasil"].filter(Boolean).join(", ");
-  const tag = TAG_MAP[normalizeText(query)];
+  const osmTag = OSM_TAG_MAP[normalizeText(query)];
 
   try {
-    let rawResults = [];
-    const seen = new Set();
-    function addRaw(list) {
-      for (const item of list) {
-        const k = item.osm_type && item.osm_id ? `${item.osm_type}${item.osm_id}` : `${item.lat},${item.lon}`;
-        if (!seen.has(k)) {
-          seen.add(k);
-          rawResults.push(item);
-        }
-      }
-    }
+    let combined = [];
 
-    if (tag && (city || state)) {
-      // Tenta geocodificar: cidade+estado primeiro, depois só estado, depois só "Brasil".
-      // Cidades pequenas às vezes não são encontradas — nunca trava nisso, só degrada.
-      let geo = await geocodeArea(key, locationParts);
+    if (osmTag) {
+      let geo = await geocodeArea(key, locationParts || "Brasil");
       if (!geo && state) geo = await geocodeArea(key, `${state}, Brasil`);
       if (!geo) geo = await geocodeArea(key, "Brasil");
 
       if (geo) {
-        let radius = city ? 25000 : state ? 80000 : 35000;
-        addRaw(await fetchNearby(key, geo.lat, geo.lon, tag, radius));
-        // Poucos resultados? Tenta de novo com um raio bem maior antes de desistir.
-        if (rawResults.length < 15) {
-          radius = Math.min(radius * 3, 150000);
-          addRaw(await fetchNearby(key, geo.lat, geo.lon, tag, radius));
+        let radius = city ? 25000 : state ? 90000 : 40000;
+        let overpassResults = await queryOverpass(geo.lat, geo.lon, osmTag[0], osmTag[1], radius);
+        if (overpassResults.length < 12) {
+          radius = Math.min(radius * 3, 200000);
+          overpassResults = await queryOverpass(geo.lat, geo.lon, osmTag[0], osmTag[1], radius);
         }
+        combined.push(
+          ...overpassResults.map((it) => ({
+            name: it.name,
+            address: it.address || locationParts,
+            phone: it.phone,
+            website: it.website,
+            whatsapp: phoneToWhatsapp(it.phone || it.whatsappTag),
+            whatsappConfirmed: Boolean(it.whatsappTag),
+          }))
+        );
       }
     }
 
-    // Sempre soma a busca por texto livre também — combinar as duas dá mais resultados
-    // do que qualquer uma sozinha (e é o único caminho quando a categoria não é reconhecida).
+    // Sempre soma busca por texto livre (LocationIQ já devolve telefone/site direto, sem chamada extra).
     const q = locationParts ? `${query} em ${locationParts}` : `${query}, Brasil`;
     const url = new URL("https://us1.locationiq.com/v1/search");
     url.searchParams.set("key", key);
@@ -304,44 +315,35 @@ app.get("/api/prospect", auth, async (req, res) => {
     url.searchParams.set("limit", "20");
     try {
       const r = await fetch(url, { headers: { Accept: "application/json" } });
-      if (r.ok) addRaw(await r.json());
+      if (r.ok) {
+        const data = await r.json();
+        combined.push(
+          ...data.map((item) => {
+            const phone = item.extratags?.phone || item.extratags?.["contact:phone"] || null;
+            const waTag = item.extratags?.whatsapp || item.extratags?.["contact:whatsapp"] || null;
+            return {
+              name: item.name || item.display_name.split(",")[0],
+              address: item.display_name,
+              phone,
+              website: item.extratags?.website || item.extratags?.["contact:website"] || null,
+              whatsapp: phoneToWhatsapp(phone || waTag),
+              whatsappConfirmed: Boolean(waTag),
+            };
+          })
+        );
+      }
     } catch (e) {
       /* segue só com o que já tiver */
     }
 
-    // Detalha telefone/site por item, 2 de cada vez (respeitando ~2 req/s do plano grátis).
-    // Usa o ID exato do lugar (lookup) em vez de "o que tem nessa coordenada" (reverse),
-    // que é o que causava contato de uma empresa aparecer com o nome de outra.
-    const candidates = rawResults.slice(0, 40);
-    const enriched = [];
-    for (let i = 0; i < candidates.length; i += 2) {
-      const batch = candidates.slice(i, i + 2);
-      const batchResults = await Promise.all(
-        batch.map(async (item) => {
-          let phone = item.extratags?.phone || item.extratags?.["contact:phone"] || null;
-          let website = item.extratags?.website || item.extratags?.["contact:website"] || null;
-          let waTag = item.extratags?.whatsapp || item.extratags?.["contact:whatsapp"] || null;
-          if (!phone && !website && !waTag) {
-            const detail = await lookupByOsmId(key, item.osm_type, item.osm_id);
-            if (detail) {
-              phone = detail.extratags?.phone || detail.extratags?.["contact:phone"] || null;
-              website = detail.extratags?.website || detail.extratags?.["contact:website"] || null;
-              waTag = detail.extratags?.whatsapp || detail.extratags?.["contact:whatsapp"] || null;
-            }
-          }
-          return {
-            name: item.name || item.display_name.split(",")[0],
-            address: item.display_name,
-            phone,
-            website,
-            whatsapp: phoneToWhatsapp(phone || waTag),
-            whatsappConfirmed: Boolean(waTag),
-          };
-        })
-      );
-      enriched.push(...batchResults);
-      if (i + 2 < candidates.length) await sleep(600);
-    }
+    // Remove duplicados (mesmo telefone, ou mesmo nome quando não tem telefone).
+    const seen = new Set();
+    let enriched = combined.filter((r) => {
+      const k = r.whatsapp || `${normalizeText(r.name)}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
 
     let filtered = enriched.filter((r) => r.whatsapp);
     if (siteFilter === "with") filtered = filtered.filter((r) => r.website);
@@ -349,7 +351,6 @@ app.get("/api/prospect", auth, async (req, res) => {
     if (waFilter === "confirmed") filtered = filtered.filter((r) => r.whatsappConfirmed);
     if (waFilter === "phoneOnly") filtered = filtered.filter((r) => !r.whatsappConfirmed);
 
-    // Marca (ou remove, se pedido) quem já foi contatado antes.
     const contactedR = await db.execute("SELECT phone FROM contacted_companies");
     const contactedPhones = new Set(contactedR.rows.map((r) => r.phone));
     filtered = filtered.map((r) => ({ ...r, alreadyContacted: contactedPhones.has(r.whatsapp) }));
