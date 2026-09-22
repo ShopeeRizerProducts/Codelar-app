@@ -223,11 +223,21 @@ async function geocodeArea(key, q) {
   geoUrl.searchParams.set("q", q);
   geoUrl.searchParams.set("format", "json");
   geoUrl.searchParams.set("limit", "1");
-  const geoR = await fetch(geoUrl, { headers: { Accept: "application/json" } });
-  if (!geoR.ok) return null;
-  const geoData = await geoR.json();
-  if (!geoData.length) return null;
-  return { lat: geoData[0].lat, lon: geoData[0].lon };
+  try {
+    const geoR = await fetch(geoUrl, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(8000) });
+    if (!geoR.ok) return null;
+    const geoData = await geoR.json();
+    if (!geoData.length) return null;
+    const it = geoData[0];
+    // boundingbox do Nominatim/LocationIQ vem como [south, north, west, east] (strings).
+    const bbox = Array.isArray(it.boundingbox) && it.boundingbox.length === 4
+      ? it.boundingbox.map(Number)
+      : null;
+    return { lat: it.lat, lon: it.lon, bbox };
+  } catch (e) {
+    console.error("geocodeArea falhou:", e.message);
+    return null;
+  }
 }
 
 function addressFromTags(tags) {
@@ -235,15 +245,23 @@ function addressFromTags(tags) {
   return parts.length ? parts.join(", ") : null;
 }
 
-async function queryOverpass(lat, lon, osmKey, osmValue, radius) {
-  const query = `[out:json][timeout:25];(node["${osmKey}"="${osmValue}"](around:${radius},${lat},${lon});way["${osmKey}"="${osmValue}"](around:${radius},${lat},${lon}););out center tags qt;`;
+// Busca dentro da área real (o retângulo que cobre a cidade/estado/país inteiro), não só
+// num raio ao redor de um ponto — assim cobre o lugar todo de verdade.
+async function queryOverpass(bbox, osmKey, osmValue) {
+  const [south, north, west, east] = bbox;
+  const box = `${south},${west},${north},${east}`;
+  const query = `[out:json][timeout:25];(node["${osmKey}"="${osmValue}"](${box});way["${osmKey}"="${osmValue}"](${box}););out center tags qt;`;
   try {
     const r = await fetch("https://overpass-api.de/api/interpreter", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: "data=" + encodeURIComponent(query),
+      signal: AbortSignal.timeout(22000),
     });
-    if (!r.ok) return [];
+    if (!r.ok) {
+      console.error("Overpass respondeu status", r.status, (await r.text()).slice(0, 200));
+      return [];
+    }
     const data = await r.json();
     return (data.elements || []).map((el) => {
       const tags = el.tags || {};
@@ -256,6 +274,40 @@ async function queryOverpass(lat, lon, osmKey, osmValue, radius) {
       };
     }).filter((it) => it.name);
   } catch (e) {
+    console.error("queryOverpass falhou:", e.message);
+    return [];
+  }
+}
+
+async function textSearchLocationIQ(key, q) {
+  const url = new URL("https://us1.locationiq.com/v1/search");
+  url.searchParams.set("key", key);
+  url.searchParams.set("q", q);
+  url.searchParams.set("format", "json");
+  url.searchParams.set("addressdetails", "1");
+  url.searchParams.set("extratags", "1");
+  url.searchParams.set("limit", "20");
+  try {
+    const r = await fetch(url, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(10000) });
+    if (!r.ok) {
+      console.error("LocationIQ search respondeu status", r.status);
+      return [];
+    }
+    const data = await r.json();
+    return data.map((item) => {
+      const phone = item.extratags?.phone || item.extratags?.["contact:phone"] || null;
+      const waTag = item.extratags?.whatsapp || item.extratags?.["contact:whatsapp"] || null;
+      return {
+        name: item.name || item.display_name.split(",")[0],
+        address: item.display_name,
+        phone,
+        website: item.extratags?.website || item.extratags?.["contact:website"] || null,
+        whatsapp: phoneToWhatsapp(phone || waTag),
+        whatsappConfirmed: Boolean(waTag),
+      };
+    });
+  } catch (e) {
+    console.error("textSearchLocationIQ falhou:", e.message);
     return [];
   }
 }
@@ -275,66 +327,41 @@ app.get("/api/prospect", auth, async (req, res) => {
 
   const locationParts = [city, state, "Brasil"].filter(Boolean).join(", ");
   const osmTag = OSM_TAG_MAP[normalizeText(query)];
+  const q = locationParts ? `${query} em ${locationParts}` : `${query}, Brasil`;
 
   try {
-    let combined = [];
-
-    if (osmTag) {
-      let geo = await geocodeArea(key, locationParts || "Brasil");
-      if (!geo && state) geo = await geocodeArea(key, `${state}, Brasil`);
-      if (!geo) geo = await geocodeArea(key, "Brasil");
-
-      if (geo) {
-        let radius = city ? 25000 : state ? 90000 : 40000;
-        let overpassResults = await queryOverpass(geo.lat, geo.lon, osmTag[0], osmTag[1], radius);
-        if (overpassResults.length < 12) {
-          radius = Math.min(radius * 3, 200000);
-          overpassResults = await queryOverpass(geo.lat, geo.lon, osmTag[0], osmTag[1], radius);
+    const [overpassResults, textResults] = await Promise.all([
+      (async () => {
+        if (!osmTag) return [];
+        let geo = await geocodeArea(key, locationParts || "Brasil");
+        if (!geo && state) geo = await geocodeArea(key, `${state}, Brasil`);
+        if (!geo) geo = await geocodeArea(key, "Brasil");
+        if (!geo) return [];
+        let bbox = geo.bbox;
+        if (!bbox) {
+          // Caso raro sem contorno disponível: aproxima com ~50km ao redor do ponto.
+          const d = 0.45;
+          bbox = [Number(geo.lat) - d, Number(geo.lat) + d, Number(geo.lon) - d, Number(geo.lon) + d];
         }
-        combined.push(
-          ...overpassResults.map((it) => ({
-            name: it.name,
-            address: it.address || locationParts,
-            phone: it.phone,
-            website: it.website,
-            whatsapp: phoneToWhatsapp(it.phone || it.whatsappTag),
-            whatsappConfirmed: Boolean(it.whatsappTag),
-          }))
-        );
-      }
-    }
+        // Alarga um pouco a borda, pra pegar empresas bem na divisa que o contorno exato deixaria de fora.
+        const [south, north, west, east] = bbox;
+        const latPad = (north - south) * 0.15;
+        const lonPad = (east - west) * 0.15;
+        const paddedBbox = [south - latPad, north + latPad, west - lonPad, east + lonPad];
+        const results = await queryOverpass(paddedBbox, osmTag[0], osmTag[1]);
+        return results.map((it) => ({
+          name: it.name,
+          address: it.address || locationParts,
+          phone: it.phone,
+          website: it.website,
+          whatsapp: phoneToWhatsapp(it.phone || it.whatsappTag),
+          whatsappConfirmed: Boolean(it.whatsappTag),
+        }));
+      })(),
+      textSearchLocationIQ(key, q),
+    ]);
 
-    // Sempre soma busca por texto livre (LocationIQ já devolve telefone/site direto, sem chamada extra).
-    const q = locationParts ? `${query} em ${locationParts}` : `${query}, Brasil`;
-    const url = new URL("https://us1.locationiq.com/v1/search");
-    url.searchParams.set("key", key);
-    url.searchParams.set("q", q);
-    url.searchParams.set("format", "json");
-    url.searchParams.set("addressdetails", "1");
-    url.searchParams.set("extratags", "1");
-    url.searchParams.set("limit", "20");
-    try {
-      const r = await fetch(url, { headers: { Accept: "application/json" } });
-      if (r.ok) {
-        const data = await r.json();
-        combined.push(
-          ...data.map((item) => {
-            const phone = item.extratags?.phone || item.extratags?.["contact:phone"] || null;
-            const waTag = item.extratags?.whatsapp || item.extratags?.["contact:whatsapp"] || null;
-            return {
-              name: item.name || item.display_name.split(",")[0],
-              address: item.display_name,
-              phone,
-              website: item.extratags?.website || item.extratags?.["contact:website"] || null,
-              whatsapp: phoneToWhatsapp(phone || waTag),
-              whatsappConfirmed: Boolean(waTag),
-            };
-          })
-        );
-      }
-    } catch (e) {
-      /* segue só com o que já tiver */
-    }
+    const combined = [...overpassResults, ...textResults];
 
     // Remove duplicados (mesmo telefone, ou mesmo nome quando não tem telefone).
     const seen = new Set();
