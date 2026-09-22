@@ -406,7 +406,7 @@ async function doProspect(){
   const query=$("pqQuery").value.trim();
   if(!query){ alert("Digita o tipo de negócio que você quer buscar."); return; }
   const btn=$("pqBtn"); btn.disabled=true; btn.textContent="Buscando...";
-  $("prospectResults").innerHTML=`<div class="chart-empty">Buscando bem mais empresas e conferindo telefone de cada uma — pode levar de 15 a 30 segundos...</div>`;
+  $("prospectResults").innerHTML=`<div class="chart-empty">Buscando empresas...</div>`;
   try{
     const params=new URLSearchParams({query, state:$("pqState").value.trim(), city:$("pqCity").value.trim(), waFilter:$("pqWa").value, siteFilter:$("pqSite").value, excludeContacted:$("pqExclude").checked?"1":"0"});
     const d=await api(`/api/prospect?${params.toString()}`);
