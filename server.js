@@ -2,10 +2,6 @@ import express from "express";
 import dotenv from "dotenv";
 import { createClient } from "@libsql/client";
 import crypto from "crypto";
-import fs from "fs";
-import path from "path";
-import makeWASocket, { Browsers, DisconnectReason, useMultiFileAuthState } from "@whiskeysockets/baileys";
-import pino from "pino";
 
 dotenv.config();
 const app = express();
@@ -103,155 +99,6 @@ app.post("/api/unlock", (req, res) => {
   const token = crypto.randomBytes(24).toString("hex");
   validTokens.add(token);
   res.json({ token });
-});
-
-// WhatsApp Web via pairing code (sem QR).
-// O código é solicitado ao próprio WhatsApp; nunca é gerado aleatoriamente pelo frontend.
-// A sessão fica em disco para reconectar depois que o processo reiniciar.
-const WA_AUTH_DIR = process.env.WA_AUTH_DIR || path.resolve("./whatsapp_auth");
-let waSock = null;
-let waState = { status: "disconnected", phone: null, pairingCode: null, lastError: null };
-let waStarting = null;
-let waReadyPromise = null;
-let waReadyResolve = null;
-let waReadyReject = null;
-
-function waDigits(value) { return String(value || "").replace(/\D/g, ""); }
-
-function createWaReadyWaiter() {
-  waReadyPromise = new Promise((resolve, reject) => {
-    waReadyResolve = resolve;
-    waReadyReject = reject;
-  });
-  return waReadyPromise;
-}
-
-async function startWhatsApp() {
-  if (waStarting) return waStarting;
-  if (waSock && waState.status !== "disconnected" && waState.status !== "logged_out") return waSock;
-
-  waStarting = (async () => {
-    fs.mkdirSync(WA_AUTH_DIR, { recursive: true });
-    const { state, saveCreds } = await useMultiFileAuthState(WA_AUTH_DIR);
-    waState.status = state.creds.registered ? "connecting" : "connecting";
-    waState.lastError = null;
-    createWaReadyWaiter();
-
-    // Ubuntu/Chrome é uma identificação canônica para o fluxo de pairing code.
-    // Não usamos um browser personalizado, pois isso pode fazer o WhatsApp rejeitar
-    // o companion_hello antes de o código ser utilizável.
-    const sock = makeWASocket({
-      auth: state,
-      browser: Browsers.ubuntu("Chrome"),
-      printQRInTerminal: false,
-      markOnlineOnConnect: false,
-      syncFullHistory: false,
-      shouldSyncHistoryMessage: () => false,
-      logger: pino({ level: "silent" }),
-    });
-
-    waSock = sock;
-    sock.ev.on("creds.update", saveCreds);
-    sock.ev.on("connection.update", ({ connection, qr, lastDisconnect }) => {
-      if (qr && waReadyResolve) {
-        // Neste ponto o socket já recebeu a referência de autenticação do WhatsApp.
-        waReadyResolve();
-        waReadyResolve = null;
-        waReadyReject = null;
-      }
-      if (connection === "open") {
-        waState.status = "connected";
-        waState.lastError = null;
-        waState.pairingCode = null;
-        waState.phone = sock.user?.id?.split(":")[0] || waState.phone;
-        if (waReadyResolve) {
-          waReadyResolve();
-          waReadyResolve = null;
-          waReadyReject = null;
-        }
-      } else if (connection === "connecting") {
-        waState.status = "connecting";
-      } else if (connection === "close") {
-        const code = lastDisconnect?.error?.output?.statusCode;
-        const msg = lastDisconnect?.error?.message || String(lastDisconnect?.error || "Conexão encerrada");
-        waState.lastError = `WhatsApp encerrou a conexão (${code || "sem código"}): ${msg}`;
-        if (waReadyReject) {
-          waReadyReject(new Error(waState.lastError));
-          waReadyResolve = null;
-          waReadyReject = null;
-        }
-        waState.status = code === DisconnectReason.loggedOut ? "logged_out" : "disconnected";
-        waSock = null;
-        if (code !== DisconnectReason.loggedOut) {
-          setTimeout(() => { startWhatsApp().catch(err => { waState.lastError = String(err?.message || err); }); }, 2000);
-        }
-      }
-    });
-    return sock;
-  })().finally(() => { waStarting = null; });
-  return waStarting;
-}
-
-app.get("/api/whatsapp/status", auth, async (req, res) => {
-  try {
-    await startWhatsApp();
-    res.json({ ...waState, connected: waState.status === "connected" });
-  } catch (e) {
-    waState.lastError = String(e?.message || e);
-    res.status(500).json({ ...waState, error: waState.lastError });
-  }
-});
-
-app.post("/api/whatsapp/pairing-code", auth, async (req, res) => {
-  try {
-    const phone = waDigits(req.body?.phone);
-    if (!/^55\d{10,11}$/.test(phone)) {
-      return res.status(400).json({ error: "Informe o número completo com DDI 55, somente números. Ex.: 5534999999999" });
-    }
-
-    // Cada tentativa começa com uma sessão não autenticada. Isso evita reutilizar
-    // um estado parcialmente pareado de uma tentativa anterior.
-    if (waSock && (waState.status === "pairing" || waState.status === "connecting")) {
-      return res.status(409).json({ error: "Já existe uma tentativa de vinculação em andamento. Aguarde alguns segundos ou desconecte e tente novamente." });
-    }
-
-    const sock = await startWhatsApp();
-    if (waState.status === "connected") {
-      return res.status(409).json({ error: "O WhatsApp já está conectado.", ...waState });
-    }
-
-    // IMPORTANTE: requestPairingCode precisa ser chamado quando o socket já estiver
-    // pronto para autenticação. Em versões afetadas, chamar imediatamente após
-    // makeWASocket pode produzir 428/Precondition Required/Connection Closed.
-    await Promise.race([
-      waReadyPromise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error("O WhatsApp não ficou pronto para solicitar o código. Se o painel estiver hospedado no Render/cloud, veja o aviso de rede no README.")), 20000))
-    ]);
-
-    const code = await sock.requestPairingCode(phone);
-    waState.phone = phone;
-    waState.pairingCode = code;
-    waState.status = "pairing";
-    res.json({ code, phone, status: waState.status });
-  } catch (e) {
-    console.error("WhatsApp pairing error:", e);
-    waState.lastError = String(e?.message || e);
-    res.status(500).json({
-      error: "Não foi possível gerar o código de vinculação.",
-      detail: waState.lastError,
-      status: waState.status,
-    });
-  }
-});
-
-app.post("/api/whatsapp/disconnect", auth, async (req, res) => {
-  try {
-    if (waSock) { try { await waSock.logout(); } catch {} }
-    waSock = null;
-    waState = { status: "disconnected", phone: null, pairingCode: null, lastError: null };
-    fs.rmSync(WA_AUTH_DIR, { recursive: true, force: true });
-    res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: "Não foi possível desconectar." }); }
 });
 
 
@@ -362,12 +209,49 @@ async function geocodeArea(key, q) {
   return { lat: geoData[0].lat, lon: geoData[0].lon };
 }
 
+async function fetchNearby(key, lat, lon, tag, radius) {
+  const nearUrl = new URL("https://us1.locationiq.com/v1/nearby");
+  nearUrl.searchParams.set("key", key);
+  nearUrl.searchParams.set("lat", lat);
+  nearUrl.searchParams.set("lon", lon);
+  nearUrl.searchParams.set("tag", tag);
+  nearUrl.searchParams.set("radius", String(radius));
+  nearUrl.searchParams.set("format", "json");
+  try {
+    const r = await fetch(nearUrl, { headers: { Accept: "application/json" } });
+    return r.ok ? await r.json() : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+// Busca o item pelo ID exato do OpenStreetMap — muito mais confiável que "o que tiver mais perto
+// dessa coordenada", que às vezes devolve um vizinho errado (foi o que causou contato trocado).
+async function lookupByOsmId(key, osmType, osmId) {
+  if (!osmType || !osmId) return null;
+  const letter = String(osmType)[0].toUpperCase();
+  const lookupUrl = new URL("https://us1.locationiq.com/v1/lookup");
+  lookupUrl.searchParams.set("key", key);
+  lookupUrl.searchParams.set("osm_ids", `${letter}${osmId}`);
+  lookupUrl.searchParams.set("format", "json");
+  lookupUrl.searchParams.set("extratags", "1");
+  try {
+    const r = await fetch(lookupUrl, { headers: { Accept: "application/json" } });
+    if (!r.ok) return null;
+    const data = await r.json();
+    return data?.[0] || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 app.get("/api/prospect", auth, async (req, res) => {
   const query = (req.query.query || "").trim();
   const state = (req.query.state || "").trim();
   const city = (req.query.city || "").trim();
   const siteFilter = (req.query.siteFilter || "any").trim(); // any | with | without
   const waFilter = (req.query.waFilter || "any").trim(); // any | confirmed | phoneOnly
+  const excludeContacted = req.query.excludeContacted === "1";
   if (!query) return res.status(400).json({ error: "Informe o tipo de negócio que você quer buscar" });
   const key = process.env.LOCATIONIQ_API_KEY;
   if (!key) {
@@ -382,7 +266,7 @@ app.get("/api/prospect", auth, async (req, res) => {
     const seen = new Set();
     function addRaw(list) {
       for (const item of list) {
-        const k = `${item.lat},${item.lon}`;
+        const k = item.osm_type && item.osm_id ? `${item.osm_type}${item.osm_id}` : `${item.lat},${item.lon}`;
         if (!seen.has(k)) {
           seen.add(k);
           rawResults.push(item);
@@ -398,19 +282,12 @@ app.get("/api/prospect", auth, async (req, res) => {
       if (!geo) geo = await geocodeArea(key, "Brasil");
 
       if (geo) {
-        const radius = city ? 20000 : state ? 80000 : 35000;
-        const nearUrl = new URL("https://us1.locationiq.com/v1/nearby");
-        nearUrl.searchParams.set("key", key);
-        nearUrl.searchParams.set("lat", geo.lat);
-        nearUrl.searchParams.set("lon", geo.lon);
-        nearUrl.searchParams.set("tag", tag);
-        nearUrl.searchParams.set("radius", String(radius));
-        nearUrl.searchParams.set("format", "json");
-        try {
-          const nearR = await fetch(nearUrl, { headers: { Accept: "application/json" } });
-          if (nearR.ok) addRaw(await nearR.json());
-        } catch (e) {
-          /* segue só com a busca por texto abaixo */
+        let radius = city ? 25000 : state ? 80000 : 35000;
+        addRaw(await fetchNearby(key, geo.lat, geo.lon, tag, radius));
+        // Poucos resultados? Tenta de novo com um raio bem maior antes de desistir.
+        if (rawResults.length < 15) {
+          radius = Math.min(radius * 3, 150000);
+          addRaw(await fetchNearby(key, geo.lat, geo.lon, tag, radius));
         }
       }
     }
@@ -432,40 +309,38 @@ app.get("/api/prospect", auth, async (req, res) => {
       /* segue só com o que já tiver */
     }
 
-    // A Nearby API não devolve telefone/site direto — busca esse detalhe por item (respeitando 2 req/s do plano grátis).
+    // Detalha telefone/site por item, 2 de cada vez (respeitando ~2 req/s do plano grátis).
+    // Usa o ID exato do lugar (lookup) em vez de "o que tem nessa coordenada" (reverse),
+    // que é o que causava contato de uma empresa aparecer com o nome de outra.
+    const candidates = rawResults.slice(0, 40);
     const enriched = [];
-    for (const item of rawResults.slice(0, 25)) {
-      let phone = item.extratags?.phone || item.extratags?.["contact:phone"] || null;
-      let website = item.extratags?.website || item.extratags?.["contact:website"] || null;
-      let waTag = item.extratags?.whatsapp || item.extratags?.["contact:whatsapp"] || null;
-      if (!phone && !website && !waTag && item.lat && item.lon) {
-        try {
-          const revUrl = new URL("https://us1.locationiq.com/v1/reverse");
-          revUrl.searchParams.set("key", key);
-          revUrl.searchParams.set("lat", item.lat);
-          revUrl.searchParams.set("lon", item.lon);
-          revUrl.searchParams.set("format", "json");
-          revUrl.searchParams.set("extratags", "1");
-          const revR = await fetch(revUrl, { headers: { Accept: "application/json" } });
-          if (revR.ok) {
-            const revData = await revR.json();
-            phone = revData.extratags?.phone || revData.extratags?.["contact:phone"] || null;
-            website = revData.extratags?.website || revData.extratags?.["contact:website"] || null;
-            waTag = revData.extratags?.whatsapp || revData.extratags?.["contact:whatsapp"] || null;
+    for (let i = 0; i < candidates.length; i += 2) {
+      const batch = candidates.slice(i, i + 2);
+      const batchResults = await Promise.all(
+        batch.map(async (item) => {
+          let phone = item.extratags?.phone || item.extratags?.["contact:phone"] || null;
+          let website = item.extratags?.website || item.extratags?.["contact:website"] || null;
+          let waTag = item.extratags?.whatsapp || item.extratags?.["contact:whatsapp"] || null;
+          if (!phone && !website && !waTag) {
+            const detail = await lookupByOsmId(key, item.osm_type, item.osm_id);
+            if (detail) {
+              phone = detail.extratags?.phone || detail.extratags?.["contact:phone"] || null;
+              website = detail.extratags?.website || detail.extratags?.["contact:website"] || null;
+              waTag = detail.extratags?.whatsapp || detail.extratags?.["contact:whatsapp"] || null;
+            }
           }
-        } catch (e) {
-          /* segue sem contato pra esse item */
-        }
-        await sleep(550);
-      }
-      enriched.push({
-        name: item.name || item.display_name.split(",")[0],
-        address: item.display_name,
-        phone,
-        website,
-        whatsapp: phoneToWhatsapp(phone || waTag),
-        whatsappConfirmed: Boolean(waTag),
-      });
+          return {
+            name: item.name || item.display_name.split(",")[0],
+            address: item.display_name,
+            phone,
+            website,
+            whatsapp: phoneToWhatsapp(phone || waTag),
+            whatsappConfirmed: Boolean(waTag),
+          };
+        })
+      );
+      enriched.push(...batchResults);
+      if (i + 2 < candidates.length) await sleep(600);
     }
 
     let filtered = enriched.filter((r) => r.whatsapp);
@@ -474,10 +349,11 @@ app.get("/api/prospect", auth, async (req, res) => {
     if (waFilter === "confirmed") filtered = filtered.filter((r) => r.whatsappConfirmed);
     if (waFilter === "phoneOnly") filtered = filtered.filter((r) => !r.whatsappConfirmed);
 
-    // Marca quem já foi contatado antes, pra não repetir sem querer.
+    // Marca (ou remove, se pedido) quem já foi contatado antes.
     const contactedR = await db.execute("SELECT phone FROM contacted_companies");
     const contactedPhones = new Set(contactedR.rows.map((r) => r.phone));
     filtered = filtered.map((r) => ({ ...r, alreadyContacted: contactedPhones.has(r.whatsapp) }));
+    if (excludeContacted) filtered = filtered.filter((r) => !r.alreadyContacted);
 
     res.json({ results: filtered.slice(0, 10) });
   } catch (e) {
