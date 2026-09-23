@@ -154,11 +154,25 @@ async function connectWhatsApp() {
   });
   waSock = sock;
   sock.ev.on("creds.update", saveCreds);
-  waReadyPromise = new Promise((resolve) => {
-    const timer = setTimeout(() => resolve(false), 20_000);
+  waReadyPromise = new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      sock.ev.off("connection.update", handler);
+      reject(new Error("O WhatsApp não iniciou a conexão a tempo."));
+    }, 15_000);
     const handler = ({ connection, qr }) => {
-      if (qr) { clearTimeout(timer); setWaStatus("pairing_ready", "WhatsApp pronto para gerar código de pareamento.").catch(()=>{}); resolve(true); sock.ev.off("connection.update", handler); }
-      if (connection === "open") { clearTimeout(timer); setWaStatus("connected", "WhatsApp conectado.", sock.user?.id?.split(":")[0]).catch(()=>{}); resolve(true); sock.ev.off("connection.update", handler); }
+      // Para código de pareamento, o socket precisa ter começado a conectar.
+      // Esperar por esse evento evita chamar requestPairingCode cedo demais.
+      if (connection === "connecting" || qr) {
+        clearTimeout(timer);
+        setWaStatus("pairing_ready", "WhatsApp pronto para solicitar o código de pareamento.").catch(()=>{});
+        sock.ev.off("connection.update", handler);
+        resolve(true);
+      } else if (connection === "open") {
+        clearTimeout(timer);
+        setWaStatus("connected", "WhatsApp conectado.", sock.user?.id?.split(":")[0]).catch(()=>{});
+        sock.ev.off("connection.update", handler);
+        resolve(true);
+      }
     };
     sock.ev.on("connection.update", handler);
   });
@@ -189,7 +203,11 @@ app.post("/api/wa/pairing-code", auth, async (req, res) => {
     if (waSock?.user) return res.status(409).json({error:"Já existe um WhatsApp conectado. Desconecte antes de parear outro número."});
     const sock = waSock || await connectWhatsApp();
     await waReadyPromise;
-    const code = await sock.requestPairingCode(phone);
+    if (sock.authState?.creds?.registered) return res.status(409).json({error:"Esta sessão já está autenticada. Desconecte antes de parear outro número."});
+    const code = await Promise.race([
+      sock.requestPairingCode(phone),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("Tempo esgotado ao solicitar o código ao WhatsApp.")), 15_000))
+    ]);
     await setWaStatus("pairing_code", "Código gerado. Digite no WhatsApp em Aparelhos conectados.", phone);
     res.json({ ok:true, code, phone });
   } catch (e) {
@@ -238,6 +256,48 @@ app.post("/api/wa/send", auth, async (req,res) => {
     await db.execute({sql:"INSERT INTO wa_send_log(phone,message,status,error) VALUES(?,?,?,?)",args:[phone,message,"error",e?.message||"Erro"]}).catch(()=>{});
     res.status(500).json({error:"Falha no envio real do WhatsApp. Nenhum retry automático foi feito.",detail:e?.message||""});
   }
+});
+
+app.post("/api/wa/batch", auth, async (req, res) => {
+  const message = String(req.body?.message || "").trim();
+  const rawNumbers = Array.isArray(req.body?.phones) ? req.body.phones : [];
+  const intervalSec = Math.max(60, Math.min(3600, Number(req.body?.intervalSec || 60)));
+  if (!message) return res.status(400).json({error:"Digite a mensagem."});
+  const phones = [...new Set(rawNumbers.map(cleanWaNumber).filter(Boolean))];
+  if (!phones.length) return res.status(400).json({error:"Adicione pelo menos um número."});
+  if (phones.length > WA_DAILY_LIMIT) return res.status(400).json({error:`A fila não pode ter mais de ${WA_DAILY_LIMIT} números.`});
+  if (!waSock?.user) return res.status(409).json({error:"WhatsApp não está conectado."});
+
+  const authorized = await db.execute({
+    sql:`SELECT phone, blocked, opted_in FROM wa_contacts WHERE phone IN (${phones.map(()=>'?').join(',')})`,
+    args:phones
+  });
+  const map = new Map(authorized.rows.map(r => [r.phone, r]));
+  const invalid = phones.filter(p => !map.has(p) || Number(map.get(p).blocked) === 1 || Number(map.get(p).opted_in) !== 1);
+  if (invalid.length) return res.status(400).json({error:"Todos os números precisam estar cadastrados e autorizados para receber mensagens.", invalid});
+
+  let sent = 0;
+  const results = [];
+  for (const phone of phones) {
+    const count = await waDailyCount();
+    if (count >= WA_DAILY_LIMIT) { results.push({phone, status:"skipped", error:"Limite diário atingido"}); break; }
+    const wait = WA_MIN_INTERVAL_MS - (Date.now() - waLastSentAt);
+    if (wait > 0) await new Promise(r => setTimeout(r, wait));
+    try {
+      const check = await waSock.onWhatsApp(phone);
+      if (!check?.[0]?.exists) { results.push({phone, status:"error", error:"Número não confirmado como conta do WhatsApp"}); continue; }
+      await waSock.sendMessage(waJid(phone), {text:message});
+      waLastSentAt = Date.now();
+      await db.execute({sql:"INSERT INTO wa_send_log(phone,message,status) VALUES(?,?,?)",args:[phone,message,"sent"]});
+      sent++; results.push({phone, status:"sent"});
+    } catch (e) {
+      await db.execute({sql:"INSERT INTO wa_send_log(phone,message,status,error) VALUES(?,?,?,?)",args:[phone,message,"error",e?.message||"Erro"]}).catch(()=>{});
+      results.push({phone, status:"error", error:e?.message||"Erro no envio"});
+    }
+    // Intervalo escolhido pelo usuário, com mínimo obrigatório de 60 segundos.
+    if (sent < phones.length) await new Promise(r => setTimeout(r, intervalSec * 1000));
+  }
+  res.json({ok:true, sent, results, intervalSec});
 });
 
 app.post("/api/unlock", (req, res) => {
