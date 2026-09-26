@@ -11,7 +11,7 @@
     "@libsql/client": "^0.14.0",
     "express": "^5.1.0",
     "dotenv": "^17.2.1",
-    "@whiskeysockets/baileys": "^6.7.24",
+    "@whiskeysockets/baileys": "github:doryani-ai/Baileys#fix/companion-reg-refresh",
     "pino": "^9.7.0"
   }
 }
