@@ -2,7 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import { createClient } from "@libsql/client";
 import crypto from "crypto";
-import makeWASocket, { Browsers, DisconnectReason, useMultiFileAuthState } from "@whiskeysockets/baileys";
+import makeWASocket, { Browsers, DisconnectReason, useMultiFileAuthState, fetchLatestWaWebVersion } from "@whiskeysockets/baileys";
 import pino from "pino";
 import fs from "fs/promises";
 import path from "path";
@@ -148,6 +148,16 @@ async function connectWhatsApp() {
   const { state, saveCreds } = await useMultiFileAuthState(WA_AUTH_DIR);
   const logger = pino({ level: "silent" });
 
+  // O WhatsApp rejeita conexões que anunciam uma versão do WA Web desatualizada
+  // (a que vem fixa na biblioteca envelhece rápido). Busca a versão atual antes de conectar.
+  let version;
+  try {
+    const versionInfo = await fetchLatestWaWebVersion({ timeoutMs: 8000 });
+    version = versionInfo.version;
+  } catch (e) {
+    // segue com a versão padrão da biblioteca se a checagem falhar
+  }
+
   const sock = makeWASocket({
     auth: state,
     logger,
@@ -157,6 +167,7 @@ async function connectWhatsApp() {
     markOnlineOnConnect: false,
     connectTimeoutMs: 60_000,
     defaultQueryTimeoutMs: 60_000,
+    ...(version ? { version } : {}),
   });
 
   waSock = sock;
