@@ -161,7 +161,7 @@ async function connectWhatsApp() {
   const sock = makeWASocket({
     auth: state,
     logger,
-    browser: Browsers.macOS("Desktop"),
+    browser: Browsers.ubuntu("Chrome"),
     syncFullHistory: false,
     shouldSyncHistoryMessage: () => false,
     markOnlineOnConnect: false,
